@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/.netlify/functions/rss", "destination": "/api/rss" }
+  ]
+}
