@@ -1,31 +1,12 @@
 {
   "version": 2,
   "builds": [
-    {
-      "src": "index.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "api/*.js",
-      "use": "@vercel/node"
-    }
+    { "src": "index.html", "use": "@vercel/static" },
+    { "src": "api/*.js", "use": "@vercel/node" }
   ],
   "routes": [
-    {
-      "src": "/api/prices",
-      "dest": "/api/prices.js"
-    },
-    {
-      "src": "/api/rss",
-      "dest": "/api/rss.js"
-    },
-    {
-      "src": "/.netlify/functions/rss",
-      "dest": "/api/rss.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
+    { "src": "/api/prices", "dest": "/api/prices.js" },
+    { "src": "/api/rss", "dest": "/api/rss.js" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
