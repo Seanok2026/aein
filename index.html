@@ -781,7 +781,7 @@
         async function loadAIAppNews() {
             const el = document.getElementById('ai-news-section');
             try {
-                const feedUrl = 'https://news.google.com/rss/search?q=ChatGPT+Gemini+Claude+AI+업데이트&hl=ko&gl=KR&ceid=KR:ko';
+                const feedUrl = 'https://news.google.com/rss/search?q=ChatGPT+OR+Gemini+OR+Claude+OR+AI+OR+인공지능+when:1d&hl=ko&gl=KR&ceid=KR:ko&hl=ko&gl=KR&ceid=KR:ko';
                 const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}&api_key=zcmfftyni4cslinidvqu07q9x2xdyuahfubggnmj&count=5`;
                 const res = await fetch(apiUrl);
                 const data = await res.json();
@@ -815,7 +815,7 @@
         async function loadAIStockNews() {
             const el = document.getElementById('ai-stock-news-section');
             try {
-                const feedUrl = 'https://news.google.com/rss/search?q=AI+주식+나스닥+반도체+투자+전망&hl=ko&gl=KR&ceid=KR:ko';
+                const feedUrl = 'https://news.google.com/rss/search?q=AI+주식+OR+나스닥+OR+반도체+OR+테크주+when:1d&hl=ko&gl=KR&ceid=KR:ko&hl=ko&gl=KR&ceid=KR:ko';
                 const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}&api_key=zcmfftyni4cslinidvqu07q9x2xdyuahfubggnmj&count=5`;
                 const res = await fetch(apiUrl);
                 const data = await res.json();
