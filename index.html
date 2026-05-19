@@ -135,7 +135,7 @@
                             <span class="text-base">🤖</span>
                             <h2 class="text-xs font-display font-extrabold text-slate-900 uppercase tracking-tight">AI 앱 최신 소식</h2>
                         </div>
-                        <span class="text-[8px] font-bold text-indigo-400 bg-indigo-50 px-2 py-0.5 rounded-full">블로터 · AI타임스 · 전자신문</span>
+                        <span class="text-[8px] font-bold text-indigo-400 bg-indigo-50 px-2 py-0.5 rounded-full">오늘의 업데이트</span>
                     </div>
                     <div id="ai-news-section" class="space-y-2.5">
                         <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
@@ -154,7 +154,7 @@
                             <span class="text-base">📊</span>
                             <h2 class="text-xs font-display font-extrabold text-slate-900 uppercase tracking-tight">AI 주식 전문가 의견</h2>
                         </div>
-                        <span class="text-[8px] font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full">Investing.com · 한국경제</span>
+                        <span class="text-[8px] font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full">월가 인사이트</span>
                     </div>
                     <div id="ai-stock-news-section" class="space-y-2.5">
                         <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
@@ -331,60 +331,6 @@
         ];
 
         // ===================== COMPUTED =====================
-
-        // 실시간 주가 업데이트 (Yahoo Finance via Vercel API)
-        let liveExchangeRate = 1498.10; // 기본값, 실시간 업데이트됨
-
-        async function fetchLivePrices() {
-            try {
-                // 미국 주식 심볼 + 환율(USDKRW=X) + 한국 주식(.KS)
-                const usSymbols = rawHoldings
-                    .filter(h => h.country === 'US' && !h.noData)
-                    .map(h => h.code);
-
-                const krSymbols = rawHoldings
-                    .filter(h => h.country === 'KR' && !h.noData)
-                    .map(h => h.code + '.KS');
-
-                const allSymbols = ['USDKRW=X', ...usSymbols, ...krSymbols].join(',');
-                const res = await fetch(`/api/prices?symbols=${encodeURIComponent(allSymbols)}`);
-                const data = await res.json();
-
-                if (!data.prices) return;
-
-                // 환율 업데이트
-                if (data.prices['USDKRW=X']?.price) {
-                    liveExchangeRate = data.prices['USDKRW=X'].price;
-                }
-
-                // rawHoldings 현재가 업데이트
-                let updatedCount = 0;
-                rawHoldings.forEach(h => {
-                    if (h.noData) return;
-                    const key = h.country === 'KR' ? h.code + '.KS' : h.code;
-                    const live = data.prices[key];
-                    if (live?.price && live.price > 0) {
-                        h.price = live.price;
-                        h._live = true;
-                        updatedCount++;
-                    }
-                });
-
-                if (updatedCount > 0) {
-                    // LIVE 표시 업데이트
-                    document.querySelector('.dot-live')?.closest('span')?.childNodes.forEach(n => {
-                        if (n.nodeType === 3) n.textContent = `LIVE (${updatedCount}종목)`;
-                    });
-                    // 화면 갱신
-                    renderHome();
-                    if (currentTab === 'portfolio') renderPortfolio(currentFilter);
-                    if (currentTab === 'tips') renderTips();
-                }
-            } catch(e) {
-                console.warn('실시간 주가 로드 실패:', e.message);
-            }
-        }
-
         function getProcessedHoldings() {
             return rawHoldings.map(h => {
                 if (h.noData || !h.price || !h.buyPrice) {
@@ -401,8 +347,8 @@
                 const value = h.amount * h.price;
                 const cost = h.amount * h.buyPrice;
                 const profit = value - cost;
-                const valueKrw = h.currency === 'USD' ? value * liveExchangeRate : value;
-                const profitKrw = h.currency === 'USD' ? profit * liveExchangeRate : profit;
+                const valueKrw = h.currency === 'USD' ? value * exchangeRate : value;
+                const profitKrw = h.currency === 'USD' ? profit * exchangeRate : profit;
                 const profitRate = (profit / cost) * 100;
                 return {
                     ...h,
@@ -692,40 +638,74 @@
                        </div>
                    </div>`;
 
-            // ② 외부 리소스 링크 섹션 (무료, API 불필요)
-            const isUS = item.country === 'US';
-            const yahooUrl = isUS
-                ? `https://finance.yahoo.com/quote/${item.code}`
-                : `https://finance.yahoo.com/quote/${item.code}.KS`;
-            const newsUrl = `https://news.google.com/search?q=${encodeURIComponent(item.name + ' 주식')}&hl=ko&gl=KR`;
-            const externalLinks = `
+            // ② AI 분석 섹션 (로딩 상태)
+            const aiSection = `
                 <div class="mt-1">
-                    <div class="flex items-center gap-2 mb-2.5">
-                        <i class="fa-solid fa-arrow-up-right-from-square text-indigo-500 text-xs"></i>
-                        <span class="text-[10px] font-extrabold text-indigo-600 uppercase tracking-wider">추가 정보</span>
+                    <div class="flex items-center gap-2 mb-2">
+                        <i class="fa-solid fa-wand-magic-sparkles text-indigo-500 text-xs"></i>
+                        <span class="text-[10px] font-extrabold text-indigo-600 uppercase tracking-wider">AI 종목 분석</span>
                     </div>
-                    <div class="space-y-2">
-                        <a href="${yahooUrl}" target="_blank"
-                           class="flex items-center justify-between bg-indigo-50 rounded-xl px-4 py-3 card-tap">
-                            <div class="flex items-center gap-2">
-                                <span class="text-base">📊</span>
-                                <span class="text-xs font-bold text-indigo-800">Yahoo Finance에서 보기</span>
-                            </div>
-                            <i class="fa-solid fa-chevron-right text-[9px] text-indigo-400"></i>
-                        </a>
-                        <a href="${newsUrl}" target="_blank"
-                           class="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-3 card-tap">
-                            <div class="flex items-center gap-2">
-                                <span class="text-base">📰</span>
-                                <span class="text-xs font-bold text-slate-700">관련 최신 뉴스 보기</span>
-                            </div>
-                            <i class="fa-solid fa-chevron-right text-[9px] text-slate-400"></i>
-                        </a>
+                    <div id="ai-stock-analysis" class="bg-indigo-50 rounded-xl p-4">
+                        <div class="flex items-center gap-2 text-indigo-400">
+                            <i class="fa-solid fa-circle-notch fa-spin text-xs"></i>
+                            <span class="text-xs font-medium">최신 정보 검색 중...</span>
+                        </div>
                     </div>
                 </div>`;
 
-            document.getElementById('modal-content').innerHTML = holdingInfo + externalLinks;
+            document.getElementById('modal-content').innerHTML = holdingInfo + aiSection;
             document.getElementById('modal').classList.remove('hidden');
+
+            // ③ Anthropic API + web_search 호출 (공통 callAI 사용)
+            try {
+                const prompt = `당신은 주식 애널리스트입니다. 아래 종목에 대해 웹 검색으로 최신 정보를 찾아 한국어로 분석해주세요.
+
+종목: ${item.name} (${item.code})
+시장: ${item.country === 'US' ? '미국' : '한국'}
+현재가: ${item.price} ${item.currency}
+매입가: ${item.buyPrice} ${item.currency}
+보유량: ${item.amount}주
+
+반드시 다음 JSON 형식으로만 응답하세요 (마크다운 코드블록 없이, 순수 JSON만):
+{
+  "summary": "2~3문장의 최근 기업 동향 요약",
+  "metrics": [
+    {"label": "시가총액", "value": "예: $2.1T"},
+    {"label": "52주 최고", "value": "숫자"},
+    {"label": "52주 최저", "value": "숫자"},
+    {"label": "PER", "value": "숫자 또는 N/A"}
+  ],
+  "recentPerformance": "최근 실적 또는 주요 이벤트 1~2문장",
+  "outlook": "단기 전망 한 문장"
+}`;
+
+                const parsed = await callAI(prompt);
+
+                const metricsHtml = (parsed.metrics || []).map(m => `
+                    <div class="flex justify-between py-1.5 border-b border-indigo-100 last:border-0">
+                        <span class="text-[10px] text-indigo-700 font-bold">${m.label}</span>
+                        <span class="text-[10px] font-extrabold text-slate-800">${m.value}</span>
+                    </div>`).join('');
+
+                document.getElementById('ai-stock-analysis').innerHTML = `
+                    <p class="text-xs text-slate-700 leading-relaxed mb-3">${parsed.summary || ''}</p>
+                    ${metricsHtml ? `<div class="mb-3">${metricsHtml}</div>` : ''}
+                    ${parsed.recentPerformance ? `
+                    <div class="bg-white rounded-lg p-3 mb-2">
+                        <p class="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">최근 실적</p>
+                        <p class="text-xs text-slate-700 leading-relaxed">${parsed.recentPerformance}</p>
+                    </div>` : ''}
+                    ${parsed.outlook ? `
+                    <div class="bg-indigo-600 rounded-lg p-3">
+                        <p class="text-[9px] font-extrabold text-indigo-200 uppercase tracking-wider mb-1">단기 전망</p>
+                        <p class="text-xs text-white leading-relaxed">${parsed.outlook}</p>
+                    </div>` : ''}
+                `;
+
+            } catch (e) {
+                document.getElementById('ai-stock-analysis').innerHTML =
+                    `<p class="text-xs text-slate-400">분석 정보를 불러오지 못했습니다.</p>`;
+            }
         }
 
         function closeModal() { document.getElementById('modal').classList.add('hidden'); }
@@ -774,159 +754,250 @@
             renderPortfolio(f);
         }
 
-        // ===================== AI HOME CONTENT (무료, API 키 불필요) =====================
+        // ===================== AI HOME CONTENT =====================
 
-        // ① AI 앱 소식 — Google News RSS (무료)
+        async function callAI(prompt) {
+            const messages = [{ role: "user", content: prompt }];
+            const tools = [{ type: "web_search_20250305", name: "web_search" }];
+
+            for (let i = 0; i < 8; i++) {
+                const res = await fetch("https://api.anthropic.com/v1/messages", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        model: "claude-sonnet-4-20250514",
+                        max_tokens: 2000,
+                        tools,
+                        messages
+                    })
+                });
+                const data = await res.json();
+
+                if (data.error) throw new Error(data.error.message);
+                if (!data.content || data.content.length === 0) throw new Error("empty response");
+
+                // assistant 응답을 히스토리에 추가
+                messages.push({ role: "assistant", content: data.content });
+
+                if (data.stop_reason === 'end_turn') {
+                    // 텍스트 블록에서 JSON 추출
+                    const textBlock = data.content.find(b => b.type === 'text');
+                    const raw = (textBlock?.text || '').trim();
+                    // JSON 블록 추출 (```json ... ``` 또는 { ... } 형태 모두 처리)
+                    const jsonMatch = raw.match(/```json\s*([\s\S]*?)```/) ||
+                                     raw.match(/```\s*([\s\S]*?)```/) ||
+                                     raw.match(/(\{[\s\S]*\})/);
+                    const jsonStr = jsonMatch ? jsonMatch[1].trim() : raw;
+                    return JSON.parse(jsonStr);
+                }
+
+                // stop_reason === 'tool_use': web_search는 서버가 자동 실행
+                // tool_result_content 블록이 이미 응답에 포함되어 있는 경우 확인
+                const hasToolResult = data.content.some(b => b.type === 'tool_result');
+                if (hasToolResult) continue; // 이미 결과 포함 → 다음 턴
+
+                // tool_use 블록에 대해 빈 tool_result 전달 (서버사이드 실행 알림)
+                const toolUseBlocks = data.content.filter(b => b.type === 'tool_use');
+                if (toolUseBlocks.length > 0) {
+                    messages.push({
+                        role: "user",
+                        content: toolUseBlocks.map(b => ({
+                            type: "tool_result",
+                            tool_use_id: b.id,
+                            content: "검색이 완료되었습니다. 결과를 바탕으로 JSON 형식으로만 응답해주세요."
+                        }))
+                    });
+                }
+            }
+            throw new Error("max iterations reached");
+        }
+
+        // ① AI 앱 업그레이드 소식
         async function loadAIAppNews() {
-            const el = document.getElementById('ai-news-section');
+            const today = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
             try {
-                const res = await fetch('/api/rss?type=ai_news');
-                const data = await res.json();
-                if (!data.items || data.items.length === 0) throw new Error('뉴스 없음');
+                const data = await callAI(`오늘(${today}) 기준 Gemini, ChatGPT, Claude, Perplexity, Grok, Copilot 등 주요 AI 앱의 최신 업데이트 소식을 웹 검색으로 찾아 한국어로 정리해주세요.
 
-                const appEmojis = { 'chatgpt': '🤖', 'gemini': '✨', 'claude': '🧠', 'perplexity': '🔍', 'grok': '⚡', 'copilot': '💡', 'sora': '🎬', 'midjourney': '🎨' };
-                const getEmoji = title => {
-                    const t = title.toLowerCase();
-                    for (const [k, v] of Object.entries(appEmojis)) if (t.includes(k)) return v;
-                    return '🤖';
-                };
+다음 JSON 형식으로만 응답 (마크다운 없이):
+{
+  "items": [
+    {
+      "app": "앱 이름",
+      "emoji": "관련 이모지",
+      "headline": "핵심 업데이트 제목 (15자 이내)",
+      "detail": "업데이트 내용 2문장"
+    }
+  ]
+}
+최대 4개 항목.`);
 
-                el.innerHTML = data.items.map(item => `
-                    <a href="${item.link}" target="_blank" class="block bg-white rounded-2xl p-4 border border-slate-100 shadow-sm card-tap">
+                const el = document.getElementById('ai-news-section');
+                el.innerHTML = (data.items || []).map(item => `
+                    <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
                         <div class="flex items-start gap-3">
-                            <div class="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center text-lg flex-shrink-0">${getEmoji(item.title)}</div>
+                            <div class="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center text-lg flex-shrink-0">${item.emoji}</div>
                             <div class="flex-1 min-w-0">
-                                <p class="text-xs font-bold text-slate-900 leading-snug mb-1">${item.title}</p>
-                                <p class="text-[9px] text-slate-400 font-bold">${item.source || ''} · ${item.pubDate ? new Date(item.pubDate).toLocaleDateString('ko-KR', {month:'short', day:'numeric'}) : ''}</p>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-[9px] font-extrabold text-indigo-600 uppercase tracking-wider">${item.app}</span>
+                                </div>
+                                <p class="text-xs font-bold text-slate-900 mb-1">${item.headline}</p>
+                                <p class="text-[10px] text-slate-500 leading-relaxed">${item.detail}</p>
                             </div>
-                            <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-slate-300 flex-shrink-0 mt-1"></i>
-                        </div>
-                    </a>
-                `).join('');
-            } catch(e) {
-                el.innerHTML = `<div class="bg-slate-50 rounded-2xl p-4 text-xs text-slate-400">뉴스를 불러오지 못했습니다.</div>`;
-            }
-        }
-
-        // ② AI 주식 소식 — 멀티소스 RSS (Investing.com, MarketWatch, Reuters, Yahoo Finance)
-        async function loadAIStockNews() {
-            const el = document.getElementById('ai-stock-news-section');
-            try {
-                const res = await fetch('/api/rss?type=ai_stock');
-                const data = await res.json();
-                if (!data.items || data.items.length === 0) throw new Error('뉴스 없음');
-
-                const tickerColors = ['text-indigo-600 bg-indigo-50','text-emerald-600 bg-emerald-50','text-violet-600 bg-violet-50','text-blue-600 bg-blue-50','text-rose-600 bg-rose-50'];
-                const myStocks = ['GOOGL','MSFT','AMD','IONQ','SOUN','TLS','TSLA','MRNA','INVZ','NVIDIA','NVDA'];
-                const getMatchedTicker = title => {
-                    const t = title.toUpperCase();
-                    return myStocks.find(s => t.includes(s)) || 'AI';
-                };
-
-                // 소스 뱃지
-                const sourceBadge = data.sourceName
-                    ? `<div class="flex items-center gap-1.5 mb-3 px-1">
-                           <i class="fa-solid fa-circle-check text-emerald-400 text-[9px]"></i>
-                           <span class="text-[9px] font-bold text-slate-400">${data.sourceName} 제공</span>
-                       </div>`
-                    : '';
-
-                el.innerHTML = sourceBadge + data.items.map((item, i) => `
-                    <a href="${item.link}" target="_blank" class="block bg-white rounded-2xl p-4 border border-slate-100 shadow-sm card-tap">
-                        <div class="flex items-start gap-2.5">
-                            <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-md flex-shrink-0 mt-0.5 ${tickerColors[i % tickerColors.length]}">${getMatchedTicker(item.title)}</span>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-xs font-bold text-slate-900 leading-snug mb-1">${item.title}</p>
-                                ${item.description ? `<p class="text-[9px] text-slate-400 leading-relaxed mb-1">${item.description}...</p>` : ''}
-                                <p class="text-[9px] text-slate-300 font-bold">${item.source || data.sourceName || ''} · ${item.pubDate ? new Date(item.pubDate).toLocaleDateString('ko-KR', {month:'short', day:'numeric'}) : ''}</p>
-                            </div>
-                            <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-slate-300 flex-shrink-0 mt-1"></i>
-                        </div>
-                    </a>
-                `).join('');
-            } catch(e) {
-                el.innerHTML = `<div class="bg-slate-50 rounded-2xl p-4 text-xs text-slate-400">뉴스를 불러오지 못했습니다.</div>`;
-            }
-        }
-
-        // ③ 5분 AI 팁 — 30개 내장, 날짜별 자동 순환 (완전 무료)
-        const AI_TIPS = [
-            { category:'프롬프트 엔지니어링', tool:'Claude', emoji:'🧠', title:'역할 부여로 답변 품질 3배 높이기', steps:['프롬프트 앞에 "당신은 10년 경력의 [직무] 전문가입니다"를 추가하세요','원하는 출력 형식을 구체적으로 지정하세요 (표, 번호 목록, 3줄 요약 등)','마지막에 "단계별로 생각하고 답변하세요"를 붙이면 정확도가 높아집니다'], proTip:'역할+형식+사고방식 3가지를 한 번에 지정하면 재질문 없이 원하는 답을 얻을 수 있습니다', timeEstimate:'3분' },
-            { category:'업무 자동화', tool:'ChatGPT', emoji:'⚡', title:'회의록 5분 만에 자동 정리', steps:['회의 중 핵심 발언만 메모장에 짧게 기록하세요','ChatGPT에 "아래 메모를 회의록으로 정리해줘: [메모]" 입력','결정사항/액션아이템/담당자/기한 형식으로 출력 요청'], proTip:'"Notion 표 형식으로" 또는 "이메일로 공유할 수 있게" 등 목적을 명시하면 바로 쓸 수 있는 결과가 나옵니다', timeEstimate:'5분' },
-            { category:'이미지 생성 AI', tool:'Midjourney', emoji:'🎨', title:'프로급 썸네일 무료로 만들기', steps:['Canva AI 또는 Adobe Firefly(무료)에 접속하세요','"미니멀 디자인, 흰 배경, 한국어 텍스트 포함" 등 스타일을 구체적으로 입력','생성된 이미지를 Canva에서 텍스트/로고만 추가해 완성'], proTip:'영어로 프롬프트를 작성할수록 품질이 높아집니다. ChatGPT에 한글 → 영어 프롬프트 변환을 먼저 요청하세요', timeEstimate:'5분' },
-            { category:'데이터 분석', tool:'ChatGPT', emoji:'📊', title:'엑셀 데이터 AI로 즉시 분석', steps:['분석하고 싶은 엑셀 파일을 ChatGPT에 첨부하세요','"이 데이터의 주요 트렌드와 이상값을 찾아줘"라고 요청','"경영진 보고용 3줄 요약으로 정리해줘"로 마무리'], proTip:'숫자 데이터는 "시각화 코드도 만들어줘"를 추가하면 파이썬 차트 코드까지 받을 수 있습니다', timeEstimate:'5분' },
-            { category:'AI 글쓰기', tool:'Claude', emoji:'✍️', title:'기획서 초안 10분 만에 완성', steps:['목적/대상/예산/기한 4가지만 메모하세요','Claude에 "아래 조건으로 기획서 초안을 작성해줘: [조건]" 입력','"더 설득력 있게", "수치 근거 추가", "임원 보고용으로 수정"으로 다듬기'], proTip:'처음부터 완벽한 결과를 기대하지 말고, 초안 → 수정 → 보완의 3단계 대화로 진행하세요', timeEstimate:'10분' },
-            { category:'AI 코딩', tool:'Claude', emoji:'💻', title:'코딩 몰라도 업무 자동화 가능', steps:['자동화하고 싶은 반복 업무를 한 문장으로 정리하세요','Claude에 "파이썬으로 [업무] 자동화 코드 만들어줘, 초보자용으로" 입력','"실행 방법도 단계별로 설명해줘"를 추가하면 설치부터 실행까지 안내받을 수 있습니다'], proTip:'오류가 나면 오류 메시지를 그대로 복사해서 "이 오류 해결해줘"라고 하면 됩니다', timeEstimate:'10분' },
-            { category:'생산성 극대화', tool:'Perplexity', emoji:'🚀', title:'리서치 시간 70% 줄이기', steps:['Perplexity.ai 접속 (무료, 로그인 불필요)','조사할 주제를 질문 형태로 입력하세요','출처 링크를 확인하고 중요한 내용만 북마크'], proTip:'Perplexity는 최신 웹 검색 결과를 요약해주므로, 시장조사·경쟁사 분석·업계 트렌드 파악에 가장 효과적입니다', timeEstimate:'3분' },
-            { category:'프롬프트 엔지니어링', tool:'ChatGPT', emoji:'🎯', title:'Few-shot으로 원하는 톤 설정', steps:['원하는 스타일의 예시 문장 2~3개를 먼저 보여주세요','"위 예시와 같은 톤으로 [내용]을 작성해줘"라고 요청','너무 딱딱하면 "조금 더 친근하게", 너무 가볍우면 "전문적으로" 즉시 수정 가능'], proTip:'회사 보고서, SNS 포스팅, 고객 이메일 등 용도별 예시를 미리 저장해두면 매번 재사용할 수 있습니다', timeEstimate:'3분' },
-            { category:'업무 자동화', tool:'Gemini', emoji:'🔄', title:'Google 워크스페이스 AI 활용', steps:['Gmail에서 Gemini 아이콘 클릭 → "이 이메일 요약해줘"','Google Docs에서 "@Gemini"로 초안 자동 작성','Google Sheets에서 함수 모르면 "이 계산을 수식으로 만들어줘" 입력'], proTip:'Google Workspace 계정이 있다면 Gemini가 이미 내장되어 있습니다. 별도 설치 없이 바로 사용 가능합니다', timeEstimate:'5분' },
-            { category:'이미지 생성 AI', tool:'Canva AI', emoji:'🖼️', title:'발표자료 디자인 AI로 자동화', steps:['Canva.com 접속 → "프레젠테이션" 선택','Magic Design 클릭 → 주제 입력 → 자동 슬라이드 생성','각 슬라이드의 텍스트만 수정하면 완성'], proTip:'Canva의 "Magic Write"로 슬라이드 내 텍스트도 AI가 자동 작성해줍니다. 디자인+글쓰기를 동시에 해결하세요', timeEstimate:'10분' },
-            { category:'데이터 분석', tool:'Claude', emoji:'📈', title:'복잡한 보고서 핵심만 추출', steps:['PDF나 긴 문서를 Claude에 붙여넣기 하세요','"3줄 요약", "핵심 수치만", "결론과 시사점만" 등으로 요청','여러 문서를 비교할 때는 "A와 B의 차이점을 표로 정리해줘" 활용'], proTip:'100페이지 보고서도 Claude에 올리면 핵심을 1분 안에 파악할 수 있습니다. 읽기 전 요약 먼저 받는 습관을 들이세요', timeEstimate:'3분' },
-            { category:'AI 글쓰기', tool:'ChatGPT', emoji:'📧', title:'이메일 답장 3초 만에 작성', steps:['받은 이메일을 복사해서 ChatGPT에 붙여넣기','"이 이메일에 [의도]로 답장 초안 작성해줘"','"더 간결하게" 또는 "더 정중하게" 한 마디로 즉시 수정'], proTip:'자주 쓰는 답장 유형(거절, 미팅 요청, 감사)의 프롬프트를 메모앱에 저장해두면 10초 만에 활용 가능합니다', timeEstimate:'1분' },
-            { category:'AI 코딩', tool:'ChatGPT', emoji:'🔧', title:'업무용 엑셀 매크로 자동 생성', steps:['자동화하고 싶은 엑셀 작업을 설명하세요','"VBA 매크로 코드로 만들어줘, 주석 포함"으로 요청','엑셀 → 개발 도구 → Visual Basic에 코드 붙여넣기'], proTip:'매크로 이름과 실행 버튼 만드는 방법도 함께 요청하면 동료에게 공유하기 좋은 완성품이 됩니다', timeEstimate:'10분' },
-            { category:'생산성 극대화', tool:'Claude', emoji:'💡', title:'복잡한 의사결정 AI와 함께', steps:['결정해야 할 상황과 선택지를 Claude에 설명하세요','"장단점 분석표를 만들어줘"로 객관적 비교','"내가 놓친 관점이 있다면 알려줘"로 사각지대 확인'], proTip:'AI의 의견을 참고하되 최종 결정은 본인이 내리세요. AI는 빠진 관점을 찾아주는 역할로 활용하면 가장 효과적입니다', timeEstimate:'5분' },
-            { category:'프롬프트 엔지니어링', tool:'Claude', emoji:'🔑', title:'Chain-of-Thought로 정확도 높이기', steps:['"단계별로 생각해서" 또는 "먼저 X를 분석하고, 그 다음 Y를 고려해서"라고 명시','복잡한 계산이나 논리 문제에 특히 효과적입니다','마지막에 "결론을 한 문장으로 요약해줘"를 추가'], proTip:'AI가 틀린 답을 낼 때 "다시 생각해봐"보다 "단계별로 다시 풀어봐"가 훨씬 효과적입니다', timeEstimate:'2분' },
-            { category:'업무 자동화', tool:'Perplexity', emoji:'📰', title:'업계 뉴스 모니터링 자동화', steps:['Perplexity.ai 접속 → "오늘 AI 업계 주요 뉴스 5개 요약해줘" 입력','매일 아침 같은 질문으로 루틴 만들기','중요한 내용은 "이걸 상사에게 보고할 3줄 요약으로" 즉시 변환'], proTip:'Perplexity는 출처를 함께 보여주기 때문에 신뢰도 높은 정보를 빠르게 검증할 수 있습니다', timeEstimate:'5분' },
-            { category:'AI 투자 활용', tool:'Perplexity', emoji:'📊', title:'보유 주식 최신 뉴스 5분 브리핑', steps:['Perplexity에 "IONQ, SOUN, TLS 최근 1주일 주요 뉴스 요약해줘" 입력','실적 발표일, 애널리스트 목표주가 변경 내용 확인','"이 종목 단기 리스크 요인이 뭐야?"로 추가 분석'], proTip:'매일 아침 보유 종목 3~4개씩 묶어서 질문하면 시간을 크게 절약할 수 있습니다', timeEstimate:'5분' },
-            { category:'AI 투자 활용', tool:'ChatGPT', emoji:'💹', title:'공시·실적 보고서 AI로 해석', steps:['DART(dart.fss.or.kr) 또는 SEC에서 실적 보고서 복사','ChatGPT에 붙여넣고 "핵심 지표와 전분기 대비 변화를 표로 정리해줘"','"이 실적이 주가에 긍정적일지 부정적일지 분석해줘"로 심층 분석'], proTip:'영어 보고서도 ChatGPT가 한국어로 바로 해석해줍니다. 해외주식 실적 시즌에 특히 유용합니다', timeEstimate:'10분' },
-            { category:'생산성 극대화', tool:'Claude', emoji:'🗂️', title:'회사 문서 템플릿 AI로 만들기', steps:['자주 쓰는 문서 양식(주간보고, 제안서 등)을 Claude에 설명하세요','"이 문서의 재사용 가능한 템플릿을 만들어줘"','빈칸([날짜], [담당자] 등)이 명확한 템플릿 저장'], proTip:'한번 만든 템플릿을 메모앱에 저장해두면 매주 30분씩 절약됩니다', timeEstimate:'10분' },
-            { category:'프롬프트 엔지니어링', tool:'ChatGPT', emoji:'🎭', title:'페르소나 설정으로 전문가 답변 받기', steps:['"당신은 15년 경력의 펀드매니저입니다. 아래 종목을 분석해주세요"처럼 역할 먼저 지정','"초보 투자자도 이해할 수 있게" 또는 "전문 용어로 상세히"로 수준 조정','원하는 형식(표, 글머리, 3줄 요약)을 함께 지정'], proTip:'역할+수준+형식 3가지를 한 번에 지정하면 재질문 없이 원하는 답을 받을 수 있습니다', timeEstimate:'3분' },
-            { category:'AI 글쓰기', tool:'Claude', emoji:'📝', title:'SNS 콘텐츠 한 번에 5개 만들기', steps:['공유하고 싶은 내용이나 링크를 Claude에 붙여넣기','"이 내용으로 LinkedIn, 인스타, 카카오채널용 각각 다른 톤으로 게시글 써줘"','해시태그도 함께 요청'], proTip:'플랫폼별로 최적 길이가 다릅니다. "인스타는 짧고 감성적으로, LinkedIn은 전문적으로"처럼 명시하세요', timeEstimate:'5분' },
-            { category:'이미지 생성 AI', tool:'Adobe Firefly', emoji:'🎨', title:'무료로 상업용 AI 이미지 만들기', steps:['firefly.adobe.com 접속 (무료, 어도비 계정 필요)','원하는 이미지를 한국어로 입력해도 인식됩니다','스타일, 색감, 구도를 추가로 지정하면 품질 향상'], proTip:'Adobe Firefly는 저작권이 보호된 이미지로만 학습해서 상업적으로 안전하게 사용할 수 있습니다', timeEstimate:'5분' },
-            { category:'데이터 분석', tool:'ChatGPT', emoji:'🔢', title:'복잡한 엑셀 함수 AI로 즉시 해결', steps:['원하는 계산을 말로 설명하세요 (예: "A열 날짜 중 이번 달 것만 B열 합계")','ChatGPT가 SUMIFS, VLOOKUP 등 정확한 함수를 생성','"이 함수가 왜 이렇게 작동하는지 설명해줘"로 학습도 병행'], proTip:'오류 메시지(#VALUE!, #REF!)를 캡처해서 보내면 원인과 해결책을 바로 알려줍니다', timeEstimate:'3분' },
-            { category:'AI 투자 활용', tool:'Perplexity', emoji:'🌐', title:'해외 투자 정보 실시간 한국어로', steps:['Perplexity에 "IONQ 최근 월가 애널리스트 목표주가 변경 내용 알려줘"','영어 뉴스도 한국어 요약으로 받을 수 있습니다','"긍정적 요인과 리스크 요인을 나눠서 정리해줘"로 구조화'], proTip:'Perplexity는 실시간 웹 검색 기반이라 방금 나온 뉴스도 바로 반영됩니다. 실적 발표 직후 활용하세요', timeEstimate:'5분' },
-        ];
-
-        function loadAITip() {
-            const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
-            const tip = AI_TIPS[dayOfYear % AI_TIPS.length];
-            document.getElementById('ai-tip-section').innerHTML = `
-                <div class="bg-gradient-to-br from-violet-600 to-indigo-600 rounded-2xl p-5 text-white shadow-lg">
-                    <div class="flex items-center justify-between mb-3">
-                        <div class="flex items-center gap-2">
-                            <span class="text-xl">${tip.emoji}</span>
-                            <div>
-                                <p class="text-[8px] font-bold text-violet-200 uppercase tracking-wider">${tip.category}</p>
-                                <p class="text-xs font-extrabold leading-tight">${tip.title}</p>
-                            </div>
-                        </div>
-                        <div class="bg-white/20 rounded-lg px-2 py-1 text-center flex-shrink-0">
-                            <p class="text-[8px] font-bold text-violet-100">소요시간</p>
-                            <p class="text-xs font-extrabold">${tip.timeEstimate}</p>
                         </div>
                     </div>
-                    <div class="bg-white/15 rounded-xl p-3 mb-3">
-                        <p class="text-[9px] font-bold text-violet-200 mb-2 uppercase tracking-wider">추천 도구: ${tip.tool}</p>
-                        <div class="space-y-2">
-                            ${tip.steps.map((step, i) => `
+                `).join('');
+            } catch(e) {
+                console.error('loadAIAppNews error:', e);
+                document.getElementById('ai-news-section').innerHTML =
+                    `<div class="bg-rose-50 rounded-2xl p-4 text-xs text-rose-400">오류: ${e.message}</div>`;
+            }
+        }
+
+        // ② AI 관련 주식 소식 + 전문가 의견
+        async function loadAIStockNews() {
+            const today = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+            const myStocks = ['GOOGL', 'MSFT', 'AMD', 'IONQ', 'SOUN', 'AISP', 'CRWV', 'TLS'];
+            try {
+                const data = await callAI(`오늘(${today}) 기준 AI 관련 주식 시장 동향과 월가 전문가 의견을 웹 검색으로 찾아 한국어로 정리해주세요.
+특히 다음 종목 관련 최신 뉴스를 포함해주세요: ${myStocks.join(', ')}
+
+다음 JSON 형식으로만 응답 (마크다운 없이):
+{
+  "marketSummary": "오늘 AI 주식 시장 전반 동향 2문장",
+  "expertOpinions": [
+    {
+      "expert": "전문가 이름 또는 기관",
+      "opinion": "의견 내용 1~2문장",
+      "sentiment": "bullish 또는 bearish 또는 neutral"
+    }
+  ],
+  "stockHighlights": [
+    {
+      "ticker": "종목코드",
+      "news": "최신 뉴스 1문장"
+    }
+  ]
+}
+expertOpinions 최대 2개, stockHighlights 최대 3개.`);
+
+                const el = document.getElementById('ai-stock-news-section');
+                const sentimentColor = s => s === 'bullish' ? 'text-emerald-600 bg-emerald-50' : s === 'bearish' ? 'text-rose-500 bg-rose-50' : 'text-slate-500 bg-slate-100';
+                const sentimentLabel = s => s === 'bullish' ? '낙관' : s === 'bearish' ? '비관' : '중립';
+
+                el.innerHTML = `
+                    ${data.marketSummary ? `
+                    <div class="bg-slate-900 rounded-2xl p-4 text-white">
+                        <p class="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider mb-2">오늘의 시장</p>
+                        <p class="text-xs leading-relaxed">${data.marketSummary}</p>
+                    </div>` : ''}
+
+                    ${(data.expertOpinions || []).map(op => `
+                    <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[10px] font-extrabold text-slate-800">${op.expert}</span>
+                            <span class="text-[8px] font-bold px-2 py-0.5 rounded-full ${sentimentColor(op.sentiment)}">${sentimentLabel(op.sentiment)}</span>
+                        </div>
+                        <p class="text-[10px] text-slate-600 leading-relaxed">"${op.opinion}"</p>
+                    </div>`).join('')}
+
+                    ${(data.stockHighlights || []).length > 0 ? `
+                    <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+                        <p class="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider mb-3">보유종목 뉴스</p>
+                        <div class="space-y-2.5">
+                            ${(data.stockHighlights || []).map(s => `
                             <div class="flex items-start gap-2">
-                                <span class="w-4 h-4 rounded-full bg-white/30 flex items-center justify-center text-[8px] font-extrabold flex-shrink-0 mt-0.5">${i+1}</span>
-                                <p class="text-[10px] leading-relaxed text-white/90">${step}</p>
+                                <span class="text-[9px] font-extrabold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md flex-shrink-0">${s.ticker}</span>
+                                <p class="text-[10px] text-slate-600 leading-relaxed">${s.news}</p>
                             </div>`).join('')}
                         </div>
+                    </div>` : ''}
+                `;
+            } catch(e) {
+                console.error('loadAIStockNews error:', e);
+                document.getElementById('ai-stock-news-section').innerHTML =
+                    `<div class="bg-rose-50 rounded-2xl p-4 text-xs text-rose-400">오류: ${e.message}</div>`;
+            }
+        }
+
+        // ③ 오늘의 5분 AI 팁 (웹 검색 불필요 — Claude 자체 생성)
+        async function loadAITip() {
+            const dayIndex = new Date().getDay();
+            const categories = ['프롬프트 엔지니어링', '업무 자동화', '이미지 생성 AI', '데이터 분석', 'AI 글쓰기', 'AI 코딩', '생산성 극대화'];
+            const category = categories[dayIndex];
+            try {
+                const res = await fetch("https://api.anthropic.com/v1/messages", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        model: "claude-sonnet-4-20250514",
+                        max_tokens: 800,
+                        messages: [{
+                            role: "user",
+                            content: `AI 전문가가 되고 싶은 직장인을 위한 오늘의 5분 실전 AI 팁을 만들어주세요.
+오늘 주제: ${category}
+Gemini, ChatGPT, Claude, Perplexity 중 가장 적합한 도구를 추천해주세요.
+
+순수 JSON만 응답 (마크다운 코드블록 없이):
+{"category":"${category}","title":"팁 제목(20자이내)","tool":"추천AI도구명","toolEmoji":"이모지","steps":["단계1","단계2","단계3"],"proTip":"핵심노하우1문장","timeEstimate":"3분"}`
+                        }]
+                    })
+                });
+                const d = await res.json();
+                if (d.error) throw new Error(d.error.message);
+                const raw = (d.content?.find(b => b.type === 'text')?.text || '').trim();
+                const jsonMatch = raw.match(/\{[\s\S]*\}/);
+                const data = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+
+                document.getElementById('ai-tip-section').innerHTML = `
+                    <div class="bg-gradient-to-br from-violet-600 to-indigo-600 rounded-2xl p-5 text-white shadow-lg">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xl">${data.toolEmoji || '⚡'}</span>
+                                <div>
+                                    <p class="text-[8px] font-bold text-violet-200 uppercase tracking-wider">${data.category}</p>
+                                    <p class="text-xs font-extrabold leading-tight">${data.title}</p>
+                                </div>
+                            </div>
+                            <div class="bg-white/20 rounded-lg px-2 py-1 text-center flex-shrink-0">
+                                <p class="text-[8px] font-bold text-violet-100">소요시간</p>
+                                <p class="text-xs font-extrabold">${data.timeEstimate || '5분'}</p>
+                            </div>
+                        </div>
+                        <div class="bg-white/15 rounded-xl p-3 mb-3">
+                            <p class="text-[9px] font-bold text-violet-200 mb-2 uppercase tracking-wider">추천 도구: ${data.tool}</p>
+                            <div class="space-y-2">
+                                ${(data.steps || []).map((step, i) => `
+                                <div class="flex items-start gap-2">
+                                    <span class="w-4 h-4 rounded-full bg-white/30 flex items-center justify-center text-[8px] font-extrabold flex-shrink-0 mt-0.5">${i+1}</span>
+                                    <p class="text-[10px] leading-relaxed text-white/90">${step}</p>
+                                </div>`).join('')}
+                            </div>
+                        </div>
+                        <div class="bg-yellow-400/20 rounded-xl p-3 flex items-start gap-2">
+                            <span class="text-yellow-300 text-sm flex-shrink-0">💡</span>
+                            <p class="text-[10px] text-yellow-100 leading-relaxed font-medium">${data.proTip}</p>
+                        </div>
                     </div>
-                    <div class="bg-yellow-400/20 rounded-xl p-3 flex items-start gap-2">
-                        <span class="text-yellow-300 text-sm flex-shrink-0">💡</span>
-                        <p class="text-[10px] text-yellow-100 leading-relaxed font-medium">${tip.proTip}</p>
-                    </div>
-                </div>
-            `;
+                `;
+            } catch(e) {
+                console.error('loadAITip error:', e);
+                document.getElementById('ai-tip-section').innerHTML =
+                    `<div class="bg-rose-50 rounded-2xl p-4 text-xs text-rose-400">오류: ${e.message}</div>`;
+            }
         }
 
         async function loadAllHomeContent() {
-            loadAITip(); // 동기 함수 - 즉시 렌더링
+            // 병렬로 3개 섹션 동시 로드
             await Promise.allSettled([
                 loadAIAppNews(),
-                loadAIStockNews()
+                loadAIStockNews(),
+                loadAITip()
             ]);
         }
 
         async function syncPortfolioWithAI() {
             const icon = document.getElementById('refresh-icon');
             icon.classList.add('fa-spin');
-
-            // 실시간 주가 먼저 갱신
-            await fetchLivePrices();
 
             // 로딩 상태 초기화
             document.getElementById('ai-news-section').innerHTML = `<div class="bg-white rounded-2xl p-4 border border-slate-100"><div class="flex items-center gap-2 text-slate-300"><i class="fa-solid fa-circle-notch fa-spin text-xs"></i><span class="text-xs">AI 앱 소식 불러오는 중...</span></div></div>`;
@@ -943,15 +1014,11 @@
 
         // ===================== INIT =====================
         window.onload = async () => {
+            // 초기 히스토리 상태 설정 (앱 진입점)
             history.replaceState({ tab: 'home' }, '', '#home');
             renderHome();
             document.getElementById('nav-home').classList.add('bg-indigo-600', 'text-white');
             document.getElementById('nav-home').classList.remove('text-slate-500');
-
-            // 실시간 주가 즉시 로드 후 5분마다 자동 갱신
-            fetchLivePrices();
-            setInterval(fetchLivePrices, 5 * 60 * 1000);
-
             loadAllHomeContent();
         };
     </script>
