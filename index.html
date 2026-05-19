@@ -780,7 +780,7 @@
         async function loadAIAppNews() {
             const el = document.getElementById('ai-news-section');
             try {
-                const res = await fetch('/.netlify/functions/rss?type=ai_news');
+                const res = await fetch('/api/rss?type=ai_news');
                 const data = await res.json();
                 if (!data.items || data.items.length === 0) throw new Error('뉴스 없음');
 
@@ -812,7 +812,7 @@
         async function loadAIStockNews() {
             const el = document.getElementById('ai-stock-news-section');
             try {
-                const res = await fetch('/.netlify/functions/rss?type=ai_stock');
+                const res = await fetch('/api/rss?type=ai_stock');
                 const data = await res.json();
                 if (!data.items || data.items.length === 0) throw new Error('뉴스 없음');
 
