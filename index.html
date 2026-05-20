@@ -2,10 +2,10 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <link rel="apple-touch-icon" href="/icon.png">
-    <link rel="icon" href="/icon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>애인 - 전 종목 통합 포트폴리오</title>
+    <link rel="apple-touch-icon" href="/icon.png">
+    <link rel="icon" type="image/png" href="/icon.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -338,51 +338,54 @@
         let liveExchangeRate = 1498.10; // 기본값, 실시간 업데이트됨
 
         async function fetchLivePrices() {
-    try {
-        const usSymbols = rawHoldings
-            .filter(h => h.country === 'US' && !h.noData)
-            .map(h => h.code);
-        const krSymbols = rawHoldings
-    .filter(h => h.country === 'KR' && !h.noData)
-    .map(h => h.code + '.KS');
-const allSymbols = ['USDKRW=X', ...usSymbols, ...krSymbols].join(',');
-        const res = await fetch(`/api/prices?symbols=${encodeURIComponent(allSymbols)}`);
-        const data = await res.json();
-
-        if (data.prices) {
-            if (data.prices['USDKRW=X']?.price) {
-                liveExchangeRate = data.prices['USDKRW=X'].price;
-            }
-            rawHoldings.forEach(h => {
-                if (h.noData) return;
-const key = h.country === 'KR' ? h.code + '.KS' : h.code;
-const live = data.prices[key];
-                if (live?.price > 0) { h.price = live.price; h._live = true; }
-            });
-        }
-
-        const krHoldings = rawHoldings.filter(h => h.country === 'KR' && !h.noData);
-        for (const h of krHoldings) {
             try {
-                const url = `https://m.stock.naver.com/api/stock/${h.code}/basic`;
-                const proxyUrl = `https://corsproxy.io/?{encodeURIComponent(url)}`;
-                const r = await fetch(proxyUrl);
-                const d = await r.json();
-                const price = parseFloat((d?.closePrice || '0').replace(/,/g, ''));
-                if (price > 0) { h.price = price; h._live = true; }
-            } catch(e) {}
-        }
+                // 미국 주식 심볼 + 환율(USDKRW=X) + 한국 주식(.KS)
+                const usSymbols = rawHoldings
+                    .filter(h => h.country === 'US' && !h.noData)
+                    .map(h => h.code);
 
-        const updatedCount = rawHoldings.filter(h => h._live).length;
-        if (updatedCount > 0) {
-            renderHome();
-            if (currentTab === 'portfolio') renderPortfolio(currentFilter);
-            if (currentTab === 'tips') renderTips();
+                const krSymbols = rawHoldings
+                    .filter(h => h.country === 'KR' && !h.noData)
+                    .map(h => h.code + '.KS');
+
+                const allSymbols = ['USDKRW=X', ...usSymbols, ...krSymbols].join(',');
+                const res = await fetch(`/api/prices?symbols=${encodeURIComponent(allSymbols)}`);
+                const data = await res.json();
+
+                if (!data.prices) return;
+
+                // 환율 업데이트
+                if (data.prices['USDKRW=X']?.price) {
+                    liveExchangeRate = data.prices['USDKRW=X'].price;
+                }
+
+                // rawHoldings 현재가 업데이트
+                let updatedCount = 0;
+                rawHoldings.forEach(h => {
+                    if (h.noData) return;
+                    const key = h.country === 'KR' ? h.code + '.KS' : h.code;
+                    const live = data.prices[key];
+                    if (live?.price && live.price > 0) {
+                        h.price = live.price;
+                        h._live = true;
+                        updatedCount++;
+                    }
+                });
+
+                if (updatedCount > 0) {
+                    // LIVE 표시 업데이트
+                    document.querySelector('.dot-live')?.closest('span')?.childNodes.forEach(n => {
+                        if (n.nodeType === 3) n.textContent = `LIVE (${updatedCount}종목)`;
+                    });
+                    // 화면 갱신
+                    renderHome();
+                    if (currentTab === 'portfolio') renderPortfolio(currentFilter);
+                    if (currentTab === 'tips') renderTips();
+                }
+            } catch(e) {
+                console.warn('실시간 주가 로드 실패:', e.message);
+            }
         }
-    } catch(e) {
-        console.warn('주가 로드 실패:', e.message);
-    }
-}
 
         function getProcessedHoldings() {
             return rawHoldings.map(h => {
@@ -780,8 +783,8 @@ const live = data.prices[key];
         async function loadAIAppNews() {
             const el = document.getElementById('ai-news-section');
             try {
-                const feedUrl = 'https://news.google.com/rss/search?q=미국증시+나스닥+다우존스+S&P500&tbs=qdr:d&hl=ko&gl=KR&ceid=KR:ko';
-                const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}&api_key=zcmfftyni4cslinidvqu07q9x2xdyuahfubggnmj&count=5`;
+                const feedUrl = 'https://news.google.com/rss/search?q=ChatGPT+Gemini+Claude+AI+업데이트&hl=ko&gl=KR&ceid=KR:ko';
+                const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}&count=5`;
                 const res = await fetch(apiUrl);
                 const data = await res.json();
                 if (data.status !== 'ok' || !data.items?.length) throw new Error('뉴스 없음');
@@ -814,8 +817,8 @@ const live = data.prices[key];
         async function loadAIStockNews() {
             const el = document.getElementById('ai-stock-news-section');
             try {
-                const feedUrl = 'https://news.google.com/rss/search?q=미국주식+월가+뉴욕증시+연준&tbs=qdr:d&hl=ko&gl=KR&ceid=KR:ko';
-                const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}&api_key=zcmfftyni4cslinidvqu07q9x2xdyuahfubggnmj&count=5`;
+                const feedUrl = 'https://news.google.com/rss/search?q=AI+주식+나스닥+반도체+투자+전망&hl=ko&gl=KR&ceid=KR:ko';
+                const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}&count=5`;
                 const res = await fetch(apiUrl);
                 const data = await res.json();
                 if (data.status !== 'ok' || !data.items?.length) throw new Error('뉴스 없음');
