@@ -336,54 +336,47 @@
         let liveExchangeRate = 1498.10; // 기본값, 실시간 업데이트됨
 
         async function fetchLivePrices() {
-            try {
-                // 미국 주식 심볼 + 환율(USDKRW=X) + 한국 주식(.KS)
-                const usSymbols = rawHoldings
-                    .filter(h => h.country === 'US' && !h.noData)
-                    .map(h => h.code);
+    try {
+        const usSymbols = rawHoldings
+            .filter(h => h.country === 'US' && !h.noData)
+            .map(h => h.code);
+        const allSymbols = ['USDKRW=X', ...usSymbols].join(',');
+        const res = await fetch(`/api/prices?symbols=${encodeURIComponent(allSymbols)}`);
+        const data = await res.json();
 
-                const krSymbols = rawHoldings
-                    .filter(h => h.country === 'KR' && !h.noData)
-                    .map(h => h.code + '.KS');
-
-                const allSymbols = ['USDKRW=X', ...usSymbols, ...krSymbols].join(',');
-                const res = await fetch(`/api/prices?symbols=${encodeURIComponent(allSymbols)}`);
-                const data = await res.json();
-
-                if (!data.prices) return;
-
-                // 환율 업데이트
-                if (data.prices['USDKRW=X']?.price) {
-                    liveExchangeRate = data.prices['USDKRW=X'].price;
-                }
-
-                // rawHoldings 현재가 업데이트
-                let updatedCount = 0;
-                rawHoldings.forEach(h => {
-                    if (h.noData) return;
-                    const key = h.country === 'KR' ? h.code + '.KS' : h.code;
-                    const live = data.prices[key];
-                    if (live?.price && live.price > 0) {
-                        h.price = live.price;
-                        h._live = true;
-                        updatedCount++;
-                    }
-                });
-
-                if (updatedCount > 0) {
-                    // LIVE 표시 업데이트
-                    document.querySelector('.dot-live')?.closest('span')?.childNodes.forEach(n => {
-                        if (n.nodeType === 3) n.textContent = `LIVE (${updatedCount}종목)`;
-                    });
-                    // 화면 갱신
-                    renderHome();
-                    if (currentTab === 'portfolio') renderPortfolio(currentFilter);
-                    if (currentTab === 'tips') renderTips();
-                }
-            } catch(e) {
-                console.warn('실시간 주가 로드 실패:', e.message);
+        if (data.prices) {
+            if (data.prices['USDKRW=X']?.price) {
+                liveExchangeRate = data.prices['USDKRW=X'].price;
             }
+            rawHoldings.forEach(h => {
+                if (h.country !== 'US' || h.noData) return;
+                const live = data.prices[h.code];
+                if (live?.price > 0) { h.price = live.price; h._live = true; }
+            });
         }
+
+        const krHoldings = rawHoldings.filter(h => h.country === 'KR' && !h.noData);
+        for (const h of krHoldings) {
+            try {
+                const url = `https://m.stock.naver.com/api/stock/${h.code}/basic`;
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+                const r = await fetch(proxyUrl);
+                const d = await r.json();
+                const price = parseFloat((d?.closePrice || '0').replace(/,/g, ''));
+                if (price > 0) { h.price = price; h._live = true; }
+            } catch(e) {}
+        }
+
+        const updatedCount = rawHoldings.filter(h => h._live).length;
+        if (updatedCount > 0) {
+            renderHome();
+            if (currentTab === 'portfolio') renderPortfolio(currentFilter);
+            if (currentTab === 'tips') renderTips();
+        }
+    } catch(e) {
+        console.warn('주가 로드 실패:', e.message);
+    }
+}
 
         function getProcessedHoldings() {
             return rawHoldings.map(h => {
