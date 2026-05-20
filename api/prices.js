@@ -18,41 +18,29 @@ export default async function handler(req, res) {
     }
   } catch(e) {}
 
-  // ② 한국 주식 — Yahoo Finance (.KS)
+  // ② 한국 주식 — 서버에서 직접 네이버 금융 호출 (CORS 없음)
   const krSymbols = symbolList.filter(s => s.includes('.KS') || s.includes('.KQ'));
-  if (krSymbols.length > 0) {
+  for (const sym of krSymbols) {
+    const code = sym.replace('.KS','').replace('.KQ','');
     try {
-      const krQuery = krSymbols.join(',');
-      const urls = [
-        `https://query1.finance.yahoo.com/v8/finance/quote?symbols=${encodeURIComponent(krQuery)}`,
-        `https://query2.finance.yahoo.com/v8/finance/quote?symbols=${encodeURIComponent(krQuery)}`,
-      ];
-      for (const url of urls) {
-        try {
-          const r = await fetch(url, {
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-              'Accept': 'application/json',
-              'Referer': 'https://finance.yahoo.com',
-              'Origin': 'https://finance.yahoo.com'
-            }
-          });
-          if (!r.ok) continue;
-          const d = await r.json();
-          const quotes = d?.quoteResponse?.result || [];
-          if (quotes.length === 0) continue;
-          for (const q of quotes) {
-            if (q.regularMarketPrice > 0) {
-              prices[q.symbol] = {
-                price: q.regularMarketPrice,
-                change: q.regularMarketChange || 0,
-                changePercent: q.regularMarketChangePercent || 0,
-                currency: 'KRW'
-              };
-            }
-          }
-          if (Object.keys(prices).filter(k => k.includes('.KS')).length > 0) break;
-        } catch(e) { continue; }
+      const r = await fetch(`https://m.stock.naver.com/api/stock/${code}/basic`, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
+          'Referer': 'https://m.stock.naver.com/',
+          'Accept': 'application/json',
+          'Accept-Language': 'ko-KR,ko;q=0.9'
+        }
+      });
+      if (!r.ok) continue;
+      const d = await r.json();
+      const price = parseFloat((d?.closePrice || '0').replace(/,/g,''));
+      if (price > 0) {
+        prices[sym] = {
+          price,
+          change: parseFloat((d?.compareToPreviousClosePrice||'0').replace(/,/g,'')),
+          changePercent: parseFloat(d?.fluctuationsRatio||'0'),
+          currency: 'KRW'
+        };
       }
     } catch(e) {}
   }
@@ -65,7 +53,7 @@ export default async function handler(req, res) {
         const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${finnhubKey}`);
         const d = await r.json();
         if (d?.c > 0) {
-          prices[sym] = { price: d.c, change: d.d || 0, changePercent: d.dp || 0, currency: 'USD' };
+          prices[sym] = { price: d.c, change: d.d||0, changePercent: d.dp||0, currency: 'USD' };
         }
       } catch(e) {}
       await new Promise(r => setTimeout(r, 80));
