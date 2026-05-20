@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>애인 - 전 종목 통합 포트폴리오</title>
+    <link rel="apple-touch-icon" href="/icon.png">
+    <link rel="icon" type="image/png" href="/icon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'DM Sans', sans-serif; }
+        h1, h2, h3, .font-display { font-family: 'Syne', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .glass { background: rgba(255,255,255,0.9); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+        .glass-dark { background: rgba(15,15,25,0.88); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeUp 0.35s ease; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        .card-tap:active { transform: scale(0.97); transition: transform 0.1s; }
+        .modal-wrap { animation: slideUp 0.3s cubic-bezier(.16,1,.3,1); }
+        @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .profit { color: #10b981; }
+        .loss { color: #f43f5e; }
+        .neutral { color: #94a3b8; }
+        .tag-us { background: #eff6ff; color: #3b82f6; }
+        .tag-kr { background: #fdf4ff; color: #a855f7; }
+        .summary-card { background: linear-gradient(135deg, #0f0f19 0%, #1a1040 50%, #0d1f3c 100%); }
+        .dot-live { animation: blink 1.4s infinite; }
+        @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+        .filter-btn { transition: all 0.2s ease; }
+        .nav-pill { transition: all 0.2s ease; }
+        .holding-rank-top { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; }
+        .holding-rank-normal { background: #f1f5f9; color: #94a3b8; }
+        .progress-bar { height: 3px; background: #e2e8f0; border-radius: 2px; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+        .section-divider { height: 1px; background: linear-gradient(90deg, transparent, #e2e8f0, transparent); }
+    </style>
+</head>
+<body class="bg-slate-100 flex justify-center items-center min-h-screen">
+
+    <div class="w-full max-w-[390px] h-[844px] bg-white shadow-2xl relative overflow-hidden flex flex-col rounded-[2.5rem] border-[7px] border-slate-900">
+
+        <!-- Header -->
+        <header class="glass px-6 pt-5 pb-4 flex justify-between items-center sticky top-0 z-20 border-b border-slate-100">
+            <div>
+                <h1 class="text-[22px] font-display font-extrabold text-slate-900 tracking-tight leading-none"><span class="text-indigo-600">애</span>인</h1>
+                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">AI와 함께 하는 즐거운 인생</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-[9px] font-bold text-emerald-500 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 dot-live inline-block"></span>LIVE
+                </span>
+                <button onclick="syncPortfolioWithAI()" class="w-9 h-9 rounded-full bg-indigo-50 flex justify-center items-center text-indigo-600 border border-indigo-100 card-tap">
+                    <i class="fa-solid fa-arrows-rotate text-sm" id="refresh-icon"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto no-scrollbar bg-slate-50/60 pb-28">
+
+            <!-- HOME TAB -->
+            <div id="tab-home" class="tab-content active">
+                <!-- Summary Card -->
+                <div class="summary-card mx-4 mt-4 rounded-[2rem] p-6 shadow-xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-48 h-48 rounded-full bg-indigo-500/10 -translate-y-12 translate-x-12"></div>
+                    <div class="absolute bottom-0 left-0 w-32 h-32 rounded-full bg-violet-500/10 translate-y-8 -translate-x-8"></div>
+                    <p class="text-slate-400 text-[9px] font-bold uppercase tracking-widest mb-1">총 평가금액</p>
+                    <h3 id="total-asset-display" class="text-[28px] font-display font-extrabold text-white tracking-tight mb-0.5">₩ 계산중...</h3>
+                    <p id="total-profit-display" class="text-sm font-bold mb-5 text-slate-300">수익 계산중...</p>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="bg-white/8 rounded-xl p-3">
+                            <p class="text-[9px] text-slate-400 font-bold mb-1">국내</p>
+                            <p id="kr-total" class="text-white text-xs font-bold">-</p>
+                        </div>
+                        <div class="bg-white/8 rounded-xl p-3">
+                            <p class="text-[9px] text-slate-400 font-bold mb-1">해외</p>
+                            <p id="us-total" class="text-white text-xs font-bold">-</p>
+                        </div>
+                        <div class="bg-white/8 rounded-xl p-3">
+                            <p class="text-[9px] text-slate-400 font-bold mb-1">종목수</p>
+                            <p id="total-count" class="text-white text-xs font-bold">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="grid grid-cols-2 gap-3 mx-4 mt-4">
+                    <button onclick="switchTab('portfolio')" class="bg-indigo-600 p-5 rounded-[1.5rem] shadow-md card-tap text-left text-white">
+                        <i class="fa-solid fa-chart-pie text-xl mb-2 block"></i>
+                        <div class="text-xs font-bold">자산 현황</div>
+                        <div class="text-[9px] text-indigo-300 mt-0.5">전체 종목 보기</div>
+                    </button>
+                    <button onclick="switchTab('tips')" class="bg-white p-5 rounded-[1.5rem] shadow-md card-tap text-left border border-slate-100">
+                        <i class="fa-solid fa-wand-magic-sparkles text-xl mb-2 block text-violet-500"></i>
+                        <div class="text-xs font-bold text-slate-900">AI 리포트</div>
+                        <div class="text-[9px] text-slate-400 mt-0.5">포트폴리오 분석</div>
+                    </button>
+                </div>
+
+                <!-- Top Holdings Preview -->
+                <div class="mx-4 mt-5">
+                    <div class="flex justify-between items-center mb-3 px-1">
+                        <h2 class="text-xs font-display font-extrabold text-slate-900 uppercase tracking-tight">TOP 보유종목</h2>
+                        <button onclick="switchTab('portfolio')" class="text-[9px] font-bold text-indigo-500">전체보기 →</button>
+                    </div>
+                    <div class="space-y-2" id="top-holdings-list"></div>
+                </div>
+
+                <!-- Profit/Loss Summary -->
+                <div class="mx-4 mt-5 bg-white rounded-[1.5rem] p-5 border border-slate-100 shadow-sm">
+                    <h2 class="text-xs font-display font-extrabold text-slate-900 uppercase tracking-tight mb-4">수익 현황</h2>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div onclick="openStockListModal('profit')" class="bg-emerald-50 rounded-xl p-3 card-tap cursor-pointer">
+                            <p class="text-[9px] text-slate-500 font-bold mb-1">수익 종목</p>
+                            <p id="profit-count" class="text-lg font-extrabold text-emerald-600 font-display">-</p>
+                            <p class="text-[8px] text-emerald-400 font-bold mt-0.5">탭하여 확인 →</p>
+                        </div>
+                        <div onclick="openStockListModal('loss')" class="bg-rose-50 rounded-xl p-3 card-tap cursor-pointer">
+                            <p class="text-[9px] text-slate-500 font-bold mb-1">손실 종목</p>
+                            <p id="loss-count" class="text-lg font-extrabold text-rose-500 font-display">-</p>
+                            <p class="text-[8px] text-rose-300 font-bold mt-0.5">탭하여 확인 →</p>
+                        </div>
+                        <div class="bg-slate-50 rounded-xl p-3 col-span-2">
+                            <p class="text-[9px] text-slate-500 font-bold mb-1">총 수익</p>
+                            <p id="total-profit-krw" class="text-base font-extrabold font-display">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI 앱 업그레이드 소식 -->
+                <div class="mx-4 mt-5">
+                    <div class="flex justify-between items-center mb-3 px-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-base">🤖</span>
+                            <h2 class="text-xs font-display font-extrabold text-slate-900 uppercase tracking-tight">AI 앱 최신 소식</h2>
+                        </div>
+                        <span class="text-[8px] font-bold text-indigo-400 bg-indigo-50 px-2 py-0.5 rounded-full">블로터 · AI타임스 · 전자신문</span>
+                    </div>
+                    <div id="ai-news-section" class="space-y-2.5">
+                        <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+                            <div class="flex items-center gap-2 text-slate-300">
+                                <i class="fa-solid fa-circle-notch fa-spin text-xs"></i>
+                                <span class="text-xs">AI 앱 소식 불러오는 중...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI 관련 주식 소식 -->
+                <div class="mx-4 mt-5">
+                    <div class="flex justify-between items-center mb-3 px-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-base">📊</span>
+                            <h2 class="text-xs font-display font-extrabold text-slate-900 uppercase tracking-tight">AI 주식 전문가 의견</h2>
+                        </div>
+                        <span class="text-[8px] font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full">Investing.com · 한국경제</span>
+                    </div>
+                    <div id="ai-stock-news-section" class="space-y-2.5">
+                        <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+                            <div class="flex items-center gap-2 text-slate-300">
+                                <i class="fa-solid fa-circle-notch fa-spin text-xs"></i>
+                                <span class="text-xs">전문가 의견 불러오는 중...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 오늘의 5분 AI 팁 -->
+                <div class="mx-4 mt-5">
+                    <div class="flex justify-between items-center mb-3 px-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-base">⚡</span>
+                            <h2 class="text-xs font-display font-extrabold text-slate-900 uppercase tracking-tight">오늘의 5분 AI 팁</h2>
+                        </div>
+                        <span class="text-[8px] font-bold text-violet-500 bg-violet-50 px-2 py-0.5 rounded-full">실전 활용</span>
+                    </div>
+                    <div id="ai-tip-section">
+                        <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+                            <div class="flex items-center gap-2 text-slate-300">
+                                <i class="fa-solid fa-circle-notch fa-spin text-xs"></i>
+                                <span class="text-xs">AI 팁 생성 중...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Update time -->
+                <p class="text-center text-[9px] text-slate-300 font-bold mt-5 pb-4">최종 업데이트: <span id="update-time">-</span></p>
+            </div>
+
+            <!-- PORTFOLIO TAB -->
+            <div id="tab-portfolio" class="tab-content px-4 pt-4">
+                <div class="flex justify-between items-center mb-4 px-1">
+                    <h2 class="text-xl font-display font-extrabold text-slate-900">Portfolio</h2>
+                    <span id="holdings-count" class="text-[9px] font-bold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-full"></span>
+                </div>
+
+                <!-- Filters -->
+                <div class="flex gap-2 mb-4 px-1">
+                    <button id="filter-all" onclick="filterPortfolio('all')" class="filter-btn px-4 py-2 bg-slate-900 text-white rounded-full text-[10px] font-bold">전체</button>
+                    <button id="filter-US" onclick="filterPortfolio('US')" class="filter-btn px-4 py-2 bg-slate-100 text-slate-500 rounded-full text-[10px] font-bold">해외주식</button>
+                    <button id="filter-KR" onclick="filterPortfolio('KR')" class="filter-btn px-4 py-2 bg-slate-100 text-slate-500 rounded-full text-[10px] font-bold">국내주식</button>
+                </div>
+
+                <!-- Sort bar -->
+                <div class="flex justify-between items-center mb-3 px-1">
+                    <p class="text-[9px] text-slate-400 font-bold">평가금액 기준 정렬</p>
+                    <div id="portfolio-profit-bar" class="text-[9px] font-bold text-slate-500"></div>
+                </div>
+
+                <div class="space-y-2 pb-4" id="portfolio-list"></div>
+            </div>
+
+            <!-- TIPS TAB -->
+            <div id="tab-tips" class="tab-content px-4 pt-4 space-y-4">
+                <h2 class="text-xl font-display font-extrabold text-slate-900 px-1">AI Report</h2>
+
+                <div class="bg-gradient-to-br from-indigo-600 to-violet-600 rounded-[1.5rem] p-6 text-white shadow-lg">
+                    <div class="flex items-center gap-2 mb-3">
+                        <i class="fa-solid fa-brain text-indigo-200"></i>
+                        <span class="text-xs font-bold text-indigo-200 uppercase tracking-wider">포트폴리오 종합 진단</span>
+                    </div>
+                    <p id="analysis-text" class="text-sm leading-relaxed font-medium">로딩 중...</p>
+                </div>
+
+                <!-- Risk Analysis -->
+                <div class="bg-white rounded-[1.5rem] p-5 border border-slate-100 shadow-sm space-y-4">
+                    <h4 class="text-xs font-display font-extrabold text-slate-900 uppercase tracking-tight">자산 비중 분석</h4>
+                    <div id="allocation-bars"></div>
+                </div>
+
+                <!-- Best & Worst -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-emerald-50 rounded-[1.5rem] p-4 border border-emerald-100">
+                        <p class="text-[9px] font-bold text-emerald-700 uppercase mb-2">최고 수익률</p>
+                        <p id="best-stock" class="text-sm font-extrabold text-emerald-800 font-display">-</p>
+                        <p id="best-rate" class="text-[10px] font-bold text-emerald-600 mt-0.5">-</p>
+                    </div>
+                    <div class="bg-rose-50 rounded-[1.5rem] p-4 border border-rose-100">
+                        <p class="text-[9px] font-bold text-rose-700 uppercase mb-2">최대 손실률</p>
+                        <p id="worst-stock" class="text-sm font-extrabold text-rose-800 font-display">-</p>
+                        <p id="worst-rate" class="text-[10px] font-bold text-rose-600 mt-0.5">-</p>
+                    </div>
+                </div>
+
+                <!-- Holdings by category -->
+                <div class="bg-white rounded-[1.5rem] p-5 border border-slate-100 shadow-sm">
+                    <h4 class="text-xs font-display font-extrabold text-slate-900 uppercase tracking-tight mb-3">카테고리별 현황</h4>
+                    <div id="category-breakdown" class="space-y-2.5"></div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="absolute bottom-6 left-1/2 -translate-x-1/2 w-[82%] h-[58px] glass-dark rounded-2xl flex justify-around items-center px-2 z-40 shadow-2xl">
+            <button id="nav-home" onclick="switchTab('home')" class="nav-pill flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl text-white">
+                <i class="fa-solid fa-house text-base"></i>
+                <span class="text-[8px] font-bold">홈</span>
+            </button>
+            <button id="nav-portfolio" onclick="switchTab('portfolio')" class="nav-pill flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl text-slate-500">
+                <i class="fa-solid fa-chart-line text-base"></i>
+                <span class="text-[8px] font-bold">포트폴리오</span>
+            </button>
+            <button id="nav-tips" onclick="switchTab('tips')" class="nav-pill flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl text-slate-500">
+                <i class="fa-solid fa-wand-magic-sparkles text-base"></i>
+                <span class="text-[8px] font-bold">리포트</span>
+            </button>
+        </nav>
+
+        <!-- Modal -->
+        <div id="modal" class="hidden absolute inset-0 z-[70] flex items-end justify-center p-4 pb-10">
+            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal()"></div>
+            <div class="bg-white w-full rounded-[2rem] p-7 relative z-10 modal-wrap shadow-2xl max-h-[82%] flex flex-col">
+                <div class="flex items-start justify-between mb-4 flex-shrink-0">
+                    <div>
+                        <h4 id="modal-title" class="text-lg font-extrabold text-slate-900 font-display leading-tight"></h4>
+                        <p id="modal-subtitle" class="text-[10px] text-slate-400 font-bold mt-0.5"></p>
+                    </div>
+                    <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 text-xs">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                <div id="modal-content" class="text-sm text-slate-600 space-y-3 overflow-y-auto no-scrollbar flex-1 pb-2"></div>
+                <button onclick="closeModal()" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-sm card-tap mt-4 flex-shrink-0">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===================== DATA =====================
+        const exchangeRate = 1498.10;
+
+        // CSV 기반 정확한 데이터 (260516 기준)
+        const rawHoldings = [
+            // --- 국내 ISA (260516_국내_ISA주식_현황.csv) ---
+            { name: "DB손해보험",            code: "005830", amount: 77,    buyPrice: 145500,    price: 164500,   country: "KR", currency: "KRW", account: "ISA" },
+            { name: "TIGER 미국나스닥100",    code: "133690", amount: 5,     buyPrice: 141820,    price: 194300,   country: "KR", currency: "KRW", account: "ISA" },
+            { name: "TIGER 미국S&P500",      code: "360750", amount: 441,   buyPrice: 24450,     price: 27765,    country: "KR", currency: "KRW", account: "ISA" },
+            { name: "KODEX 인도Nifty50",     code: "453810", amount: 350,   buyPrice: 14135,     price: 12535,    country: "KR", currency: "KRW", account: "ISA" },
+            { name: "KODEX CD금리액티브",     code: "459580", amount: 22,    buyPrice: 1075515,   price: 1074860,  country: "KR", currency: "KRW", account: "ISA" },
+            { name: "삼성전자",               code: "005930", amount: 264,   buyPrice: 150000,    price: 270500,   country: "KR", currency: "KRW", account: "ISA" },
+
+            // --- 국내 일반 (260516_국내_일반주식_현황.csv) ---
+            { name: "PLUS 글로벌휴머노이드로봇액티브", code: "0035T0", amount: 300,   buyPrice: 11300, price: 24625, country: "KR", currency: "KRW", account: "일반" },
+            { name: "한국자산신탁",           code: "123890", amount: 2375,  buyPrice: 4229,      price: 2425,     country: "KR", currency: "KRW", account: "일반" },
+
+            // --- 해외 일반 (260516_해외_일반주식_현황.csv) ---
+            { name: "ABSI (압사이)",          code: "ABSI",   amount: 500,   buyPrice: 2.7500,    price: 5.1300,   country: "US", currency: "USD" },
+            { name: "AISP (에어십 AI)",       code: "AISP",   amount: 1335,  buyPrice: 6.1318,    price: 2.4000,   country: "US", currency: "USD" },
+            { name: "AMD",                    code: "AMD",    amount: 1,     buyPrice: 100.0000,  price: 424.1000, country: "US", currency: "USD" },
+
+            { name: "CEVA (세바)",            code: "CEVA",   amount: 46,    buyPrice: 26.9600,   price: 36.5100,  country: "US", currency: "USD" },
+
+            { name: "CHRD (코드 에너지)",      code: "CHRD",   amount: 21,    buyPrice: 106.6500,  price: 148.3900, country: "US", currency: "USD" },
+            { name: "CRWV (코어위브)",        code: "CRWV",   amount: 1,     buyPrice: 54.0000,   price: 107.3000, country: "US", currency: "USD" },
+            { name: "GOOGL (알파벳)",         code: "GOOGL",  amount: 20,    buyPrice: 173.0000,  price: 396.7800, country: "US", currency: "USD" },
+            { name: "INVZ (이노비즈)",        code: "INVZ",   amount: 3000,  buyPrice: 1.7232,    price: 0.7360,   country: "US", currency: "USD" },
+            { name: "IONQ (아이온큐)",        code: "IONQ",   amount: 121,   buyPrice: 38.0000,   price: 51.9500,  country: "US", currency: "USD" },
+
+            { name: "MRNA (모더나)",          code: "MRNA",   amount: 200,   buyPrice: 24.5000,   price: 49.0400,  country: "US", currency: "USD" },
+            { name: "MSFT (마이크로소프트)",   code: "MSFT",   amount: 17,    buyPrice: 479.4117,  price: 421.9200, country: "US", currency: "USD" },
+            { name: "SNOW (스노우플레이크)",   code: "SNOW",   amount: 1,     buyPrice: 168.9000,  price: 157.4700, country: "US", currency: "USD" },
+            { name: "SOUN (사운드하운드 AI)",  code: "SOUN",   amount: 200,   buyPrice: 9.6800,    price: 8.4100,   country: "US", currency: "USD" },
+            { name: "SSTK (셔터스톡)",        code: "SSTK",   amount: 20,    buyPrice: 16.9000,   price: 16.5200,  country: "US", currency: "USD" },
+            { name: "TLS (텔로스)",           code: "TLS",    amount: 1890,  buyPrice: 2.8955,    price: 4.2000,   country: "US", currency: "USD" },
+            { name: "TSLA (테슬라)",          code: "TSLA",   amount: 20,    buyPrice: 315.0000,  price: 422.2400, country: "US", currency: "USD" },
+
+            { name: "VVX (V2X)",              code: "VVX",    amount: 77,    buyPrice: 47.0000,   price: 68.4401,  country: "US", currency: "USD" },
+
+        ];
+
+        // ===================== COMPUTED =====================
+
+        // 실시간 주가 업데이트 (Yahoo Finance via Vercel API)
+        let liveExchangeRate = 1498.10; // 기본값, 실시간 업데이트됨
+
+        async function fetchLivePrices() {
+            try {
+                // 미국 주식 심볼 + 환율(USDKRW=X) + 한국 주식(.KS)
+                const usSymbols = rawHoldings
+                    .filter(h => h.country === 'US' && !h.noData)
+                    .map(h => h.code);
+
+                const krSymbols = rawHoldings
+                    .filter(h => h.country === 'KR' && !h.noData)
+                    .map(h => h.code + '.KS');
+
+                const allSymbols = ['USDKRW=X', ...usSymbols, ...krSymbols].join(',');
+                const res = await fetch(`/api/prices?symbols=${encodeURIComponent(allSymbols)}`);
+                const data = await res.json();
+
+                if (!data.prices) return;
+
+                // 환율 업데이트
+                if (data.prices['USDKRW=X']?.price) {
+                    liveExchangeRate = data.prices['USDKRW=X'].price;
+                }
+
+                // rawHoldings 현재가 업데이트
+                let updatedCount = 0;
+                rawHoldings.forEach(h => {
+                    if (h.noData) return;
+                    const key = h.country === 'KR' ? h.code + '.KS' : h.code;
+                    const live = data.prices[key];
+                    if (live?.price && live.price > 0) {
+                        h.price = live.price;
+                        h._live = true;
+                        updatedCount++;
+                    }
+                });
+
+                if (updatedCount > 0) {
+                    // LIVE 표시 업데이트
+                    document.querySelector('.dot-live')?.closest('span')?.childNodes.forEach(n => {
+                        if (n.nodeType === 3) n.textContent = `LIVE (${updatedCount}종목)`;
+                    });
+                    // 화면 갱신
+                    renderHome();
+                    if (currentTab === 'portfolio') renderPortfolio(currentFilter);
+                    if (currentTab === 'tips') renderTips();
+                }
+            } catch(e) {
+                console.warn('실시간 주가 로드 실패:', e.message);
+            }
+        }
+
+        function getProcessedHoldings() {
+            return rawHoldings.map(h => {
+                if (h.noData || !h.price || !h.buyPrice) {
+                    return {
+                        ...h,
+                        value: 0,
+                        valueKrw: 0,
+                        profit: 0,
+                        profitKrw: 0,
+                        profitRate: 0,
+                        change: "N/A"
+                    };
+                }
+                const value = h.amount * h.price;
+                const cost = h.amount * h.buyPrice;
+                const profit = value - cost;
+                const valueKrw = h.currency === 'USD' ? value * liveExchangeRate : value;
+                const profitKrw = h.currency === 'USD' ? profit * liveExchangeRate : profit;
+                const profitRate = (profit / cost) * 100;
+                return {
+                    ...h,
+                    value,
+                    valueKrw,
+                    profit,
+                    profitKrw,
+                    profitRate,
+                    change: (profitRate >= 0 ? "+" : "") + profitRate.toFixed(2) + "%"
+                };
+            }).sort((a, b) => b.valueKrw - a.valueKrw);
+        }
+
+        function formatKrw(val) {
+            const abs = Math.abs(val);
+            if (abs >= 1e8) return (val / 1e8).toFixed(1) + "억";
+            if (abs >= 1e4) return Math.round(val / 1e4).toLocaleString() + "만";
+            return Math.round(val).toLocaleString();
+        }
+
+        // ===================== HOME =====================
+        function renderHome() {
+            const processed = getProcessedHoldings();
+            const total = processed.reduce((s, h) => s + h.valueKrw, 0);
+            const totalCost = rawHoldings.filter(h => !h.noData && h.buyPrice).reduce((s, h) => {
+                const cost = h.amount * h.buyPrice;
+                return s + (h.currency === 'USD' ? cost * exchangeRate : cost);
+            }, 0);
+            const totalProfit = total - totalCost;
+            const totalProfitRate = totalCost > 0 ? (totalProfit / totalCost) * 100 : 0;
+
+            const krTotal = processed.filter(h => h.country === 'KR').reduce((s, h) => s + h.valueKrw, 0);
+            const usTotal = processed.filter(h => h.country === 'US').reduce((s, h) => s + h.valueKrw, 0);
+
+            const profitHoldings = processed.filter(h => h.profitRate > 0);
+            const lossHoldings = processed.filter(h => h.profitRate < 0 && !h.noData);
+
+            document.getElementById('total-asset-display').innerText = '₩ ' + formatKrw(total);
+            const profitSign = totalProfit >= 0 ? '+' : '';
+            document.getElementById('total-profit-display').innerText =
+                `${profitSign}₩${formatKrw(totalProfit)} (${profitSign}${totalProfitRate.toFixed(2)}%)`;
+            document.getElementById('total-profit-display').className =
+                `text-sm font-bold mb-5 ${totalProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+            document.getElementById('kr-total').innerText = '₩' + formatKrw(krTotal);
+            document.getElementById('us-total').innerText = '₩' + formatKrw(usTotal);
+            document.getElementById('total-count').innerText = rawHoldings.length + '개';
+
+            document.getElementById('profit-count').innerText = profitHoldings.length + '개';
+            document.getElementById('loss-count').innerText = lossHoldings.length + '개';
+
+            const profitColor = totalProfit >= 0 ? 'text-emerald-600' : 'text-rose-500';
+            document.getElementById('total-profit-krw').innerHTML =
+                `<span class="${profitColor}">${profitSign}₩${formatKrw(totalProfit)}</span>`;
+
+            // Top 5 holdings
+            const topList = document.getElementById('top-holdings-list');
+            topList.innerHTML = '';
+            processed.slice(0, 5).forEach(item => {
+                const isPos = item.profitRate >= 0;
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-3 bg-white rounded-2xl p-3.5 border border-slate-100 shadow-sm card-tap cursor-pointer';
+                div.innerHTML = `
+                    <div class="w-9 h-9 rounded-xl ${item.country === 'US' ? 'tag-us' : 'tag-kr'} flex items-center justify-center">
+                        <span class="text-[8px] font-black">${item.country}</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-bold text-slate-900 truncate">${item.name}</p>
+                        <p class="text-[9px] text-slate-400">${item.amount.toLocaleString()}주</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs font-extrabold ${isPos ? 'text-emerald-500' : 'text-rose-500'}">${item.noData ? 'N/A' : item.change}</p>
+                        <p class="text-[9px] text-slate-400">₩${formatKrw(item.valueKrw)}</p>
+                    </div>
+                `;
+                div.onclick = () => openHoldingModal(item);
+                topList.appendChild(div);
+            });
+
+            document.getElementById('update-time').innerText = new Date().toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        // ===================== PORTFOLIO =====================
+        function renderPortfolio(filter = 'all') {
+            const processed = getProcessedHoldings();
+            let filtered = filter === 'KR' ? processed.filter(h => h.country === 'KR')
+                         : filter === 'US' ? processed.filter(h => h.country === 'US')
+                         : processed;
+
+            document.getElementById('holdings-count').innerText = filtered.length + ' 종목';
+
+            // Profit bar
+            const hasData = filtered.filter(h => !h.noData && h.buyPrice);
+            const totalV = hasData.reduce((s, h) => s + h.valueKrw, 0);
+            const totalC = hasData.reduce((s, h) => {
+                const c = h.amount * h.buyPrice;
+                return s + (h.currency === 'USD' ? c * exchangeRate : c);
+            }, 0);
+            const pRate = totalC > 0 ? ((totalV - totalC) / totalC * 100) : 0;
+            const pSign = pRate >= 0 ? '+' : '';
+            document.getElementById('portfolio-profit-bar').innerHTML =
+                `<span class="${pRate >= 0 ? 'text-emerald-500' : 'text-rose-500'} font-bold">${pSign}${pRate.toFixed(2)}% 수익률</span>`;
+
+            const list = document.getElementById('portfolio-list');
+            list.innerHTML = '';
+
+            const maxVal = filtered[0]?.valueKrw || 1;
+
+            filtered.forEach((item, idx) => {
+                const isPos = item.profitRate >= 0;
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-2xl p-4 border border-slate-100 shadow-sm card-tap cursor-pointer hover:shadow-md transition-shadow';
+                const barWidth = item.noData ? 0 : Math.max(3, (item.valueKrw / maxVal) * 100);
+
+                card.innerHTML = `
+                    <div class="flex items-center gap-3 mb-2.5">
+                        <div class="w-8 h-8 rounded-xl flex items-center justify-center text-[9px] font-extrabold shadow-sm ${idx < 5 ? 'holding-rank-top' : 'holding-rank-normal'}">
+                            ${idx + 1}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-1.5">
+                                <h4 class="text-xs font-bold text-slate-900 truncate">${item.name}</h4>
+                                <span class="text-[8px] font-bold px-1.5 py-0.5 rounded-full ${item.country === 'US' ? 'tag-us' : 'tag-kr'}">${item.country}</span>
+                                ${item.account ? `<span class="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500">${item.account}</span>` : ''}
+                            </div>
+                            <p class="text-[9px] text-slate-400 mt-0.5">${item.amount.toLocaleString()}주 · ${item.code}</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs font-extrabold ${item.noData ? 'text-slate-400' : isPos ? 'profit' : 'loss'}">${item.noData ? 'N/A' : item.change}</div>
+                            <div class="text-[9px] text-slate-400 mt-0.5">₩${formatKrw(item.valueKrw)}</div>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill ${item.noData ? 'bg-slate-200' : isPos ? 'bg-emerald-400' : 'bg-rose-400'}" style="width:${barWidth}%"></div>
+                    </div>
+                `;
+                card.onclick = () => openHoldingModal(item);
+                list.appendChild(card);
+            });
+        }
+
+        // ===================== TIPS =====================
+        function renderTips() {
+            const processed = getProcessedHoldings();
+            const total = processed.reduce((s, h) => s + h.valueKrw, 0);
+            const krTotal = processed.filter(h => h.country === 'KR').reduce((s, h) => s + h.valueKrw, 0);
+            const usTotal = processed.filter(h => h.country === 'US').reduce((s, h) => s + h.valueKrw, 0);
+
+            // Analysis text
+            const totalCost = rawHoldings.filter(h => !h.noData && h.buyPrice).reduce((s, h) => {
+                const c = h.amount * h.buyPrice;
+                return s + (h.currency === 'USD' ? c * exchangeRate : c);
+            }, 0);
+            const profitRate = ((total - totalCost) / totalCost * 100).toFixed(2);
+            const sign = profitRate >= 0 ? '+' : '';
+            const usRatio = (usTotal/total*100).toFixed(0);
+            const krRatio = (krTotal/total*100).toFixed(0);
+            const dominantRegion = usTotal > krTotal
+                ? `해외 비중이 약 ${usRatio}%로 국내(${krRatio}%)보다 높으며`
+                : `국내 비중이 약 ${krRatio}%로 해외(${usRatio}%)보다 높으며`;
+            document.getElementById('analysis-text').innerText =
+                `전체 포트폴리오는 현재 ${sign}${profitRate}% 수익률을 기록 중입니다. ${dominantRegion}, AI·반도체·양자컴퓨팅 테마 중심의 성장형 포트폴리오 구성입니다.`;
+
+            // Allocation bars
+            const allocEl = document.getElementById('allocation-bars');
+            const segments = [
+                { label: '해외주식', value: usTotal, color: 'bg-indigo-500' },
+                { label: '국내주식', value: krTotal, color: 'bg-violet-400' },
+            ];
+            allocEl.innerHTML = segments.map(s => `
+                <div class="mb-3">
+                    <div class="flex justify-between mb-1.5">
+                        <span class="text-[10px] font-bold text-slate-700">${s.label}</span>
+                        <span class="text-[10px] font-bold text-slate-500">${(s.value/total*100).toFixed(1)}% · ₩${formatKrw(s.value)}</span>
+                    </div>
+                    <div class="progress-bar" style="height:6px;">
+                        <div class="${s.color} progress-fill" style="width:${(s.value/total*100).toFixed(1)}%; height:6px;"></div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Best & Worst
+            const withData = processed.filter(h => !h.noData && h.buyPrice);
+            const best = withData.reduce((a, b) => a.profitRate > b.profitRate ? a : b);
+            const worst = withData.reduce((a, b) => a.profitRate < b.profitRate ? a : b);
+            document.getElementById('best-stock').innerText = best.code;
+            document.getElementById('best-rate').innerText = '+' + best.profitRate.toFixed(2) + '%';
+            document.getElementById('worst-stock').innerText = worst.code;
+            document.getElementById('worst-rate').innerText = worst.profitRate.toFixed(2) + '%';
+
+            // Category breakdown
+            const categories = [
+                { label: 'AI/소프트웨어', codes: ['AISP','SOUN','TLS','GOOGL'], icon: '🤖' },
+                { label: '반도체/하드웨어', codes: ['AMD','CEVA','INVZ','KOPN'], icon: '💾' },
+                { label: '에너지/ETF', codes: ['CHRD','TIGER 미국S&P500','TIGER 미국나스닥100','KODEX 인도Nifty50','KODEX CD금리액티브'], icon: '⚡' },
+                { label: '바이오', codes: ['MRNA','BNTX','CHGG','ABSI'], icon: '🧬' },
+                { label: '국내주식', codes: ['DB손해보험','삼성전자','PLUS 글로벌휴머노이드로봇액티브','한국자산신탁'], icon: '🇰🇷' },
+                { label: '기타', codes: ['TSLA','MSFT','CRWV','SNOW','SSTK','IONQ','VVX','CHRD','VRT'], icon: '📦' },
+            ];
+            const catEl = document.getElementById('category-breakdown');
+            catEl.innerHTML = categories.map(cat => {
+                const items = processed.filter(h => cat.codes.some(c => h.code === c || h.name.includes(c)));
+                const val = items.reduce((s, h) => s + h.valueKrw, 0);
+                if (!val) return '';
+                return `
+                    <div class="flex items-center gap-3">
+                        <span class="text-base">${cat.icon}</span>
+                        <div class="flex-1">
+                            <div class="flex justify-between mb-1">
+                                <span class="text-[10px] font-bold text-slate-700">${cat.label}</span>
+                                <span class="text-[10px] font-bold text-slate-400">${items.length}종목 · ₩${formatKrw(val)}</span>
+                            </div>
+                            <div class="progress-bar" style="height:4px;">
+                                <div class="bg-indigo-400 progress-fill" style="width:${(val/total*100).toFixed(1)}%; height:4px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ===================== MODAL =====================
+        function openStockListModal(type) {
+            const processed = getProcessedHoldings();
+            const isProfit = type === 'profit';
+            const items = processed.filter(h => !h.noData && h.buyPrice && (isProfit ? h.profitRate > 0 : h.profitRate < 0));
+            items.sort((a, b) => isProfit ? b.profitRate - a.profitRate : a.profitRate - b.profitRate);
+
+            document.getElementById('modal-title').innerText = isProfit ? '📈 수익 종목' : '📉 손실 종목';
+            document.getElementById('modal-subtitle').innerText = `총 ${items.length}개 종목`;
+
+            const content = items.map(item => {
+                const color = isProfit ? 'text-emerald-600' : 'text-rose-500';
+                const bg = isProfit ? 'bg-emerald-50' : 'bg-rose-50';
+                return `
+                    <div class="${bg} rounded-xl px-4 py-3 flex items-center justify-between cursor-pointer card-tap" onclick="openHoldingModal(${JSON.stringify(item).replace(/"/g, '&quot;')})">
+                        <div>
+                            <p class="text-xs font-bold text-slate-900">${item.name}</p>
+                            <p class="text-[9px] text-slate-400 mt-0.5">${item.amount.toLocaleString()}주 · ₩${formatKrw(item.valueKrw)}</p>
+                        </div>
+                        <span class="text-sm font-extrabold ${color} font-display">${item.change}</span>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('modal-content').innerHTML = `<div class="space-y-2">${content}</div>`;
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        async function openHoldingModal(item) {
+            // item이 문자열로 넘어온 경우(수익/손실 목록에서 클릭) 파싱
+            if (typeof item === 'string') item = JSON.parse(item);
+
+            document.getElementById('modal-title').innerText = item.name;
+            document.getElementById('modal-subtitle').innerText = `${item.code} · ${item.country === 'US' ? '미국' : '국내'}${item.account ? ' · ' + item.account + '계좌' : ''}`;
+
+            const profitColor = item.profitRate >= 0 ? 'text-emerald-600' : 'text-rose-500';
+            const profitBg   = item.profitRate >= 0 ? 'bg-emerald-50'    : 'bg-rose-50';
+
+            // ① 기본 보유 정보 (즉시 표시)
+            const holdingInfo = item.noData
+                ? `<div class="bg-amber-50 rounded-xl p-4 text-xs text-amber-700 font-medium">현재가 정보가 없습니다. 보유량: ${item.amount.toLocaleString()}주</div>`
+                : `<div class="${profitBg} rounded-xl p-4 flex justify-between items-center">
+                       <span class="text-sm font-bold text-slate-700">수익률</span>
+                       <span class="text-lg font-extrabold ${profitColor} font-display">${item.change}</span>
+                   </div>
+                   <div class="space-y-2 pt-1">
+                       <div class="flex justify-between py-2 border-b border-slate-100">
+                           <span class="text-slate-500 text-xs">매입가</span>
+                           <span class="font-bold text-xs">${item.buyPrice?.toLocaleString()} ${item.currency}</span>
+                       </div>
+                       <div class="flex justify-between py-2 border-b border-slate-100">
+                           <span class="text-slate-500 text-xs">현재가</span>
+                           <span class="font-bold text-xs text-indigo-600">${item.price?.toLocaleString()} ${item.currency}</span>
+                       </div>
+                       <div class="flex justify-between py-2 border-b border-slate-100">
+                           <span class="text-slate-500 text-xs">보유량</span>
+                           <span class="font-bold text-xs">${item.amount.toLocaleString()} 주</span>
+                       </div>
+                       <div class="flex justify-between py-2 border-b border-slate-100">
+                           <span class="text-slate-500 text-xs">평가금액</span>
+                           <span class="font-bold text-xs">₩ ${Math.round(item.valueKrw).toLocaleString()}</span>
+                       </div>
+                       <div class="flex justify-between py-2">
+                           <span class="text-slate-500 text-xs">평가손익</span>
+                           <span class="font-bold text-xs ${profitColor}">₩ ${Math.round(item.profitKrw).toLocaleString()}</span>
+                       </div>
+                   </div>`;
+
+            // ② 외부 리소스 링크 섹션 (무료, API 불필요)
+            const isUS = item.country === 'US';
+            const yahooUrl = isUS
+                ? `https://finance.yahoo.com/quote/${item.code}`
+                : `https://finance.yahoo.com/quote/${item.code}.KS`;
+            const newsUrl = `https://news.google.com/search?q=${encodeURIComponent(item.name + ' 주식')}&hl=ko&gl=KR`;
+            const externalLinks = `
+                <div class="mt-1">
+                    <div class="flex items-center gap-2 mb-2.5">
+                        <i class="fa-solid fa-arrow-up-right-from-square text-indigo-500 text-xs"></i>
+                        <span class="text-[10px] font-extrabold text-indigo-600 uppercase tracking-wider">추가 정보</span>
+                    </div>
+                    <div class="space-y-2">
+                        <a href="${yahooUrl}" target="_blank"
+                           class="flex items-center justify-between bg-indigo-50 rounded-xl px-4 py-3 card-tap">
+                            <div class="flex items-center gap-2">
+                                <span class="text-base">📊</span>
+                                <span class="text-xs font-bold text-indigo-800">Yahoo Finance에서 보기</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-[9px] text-indigo-400"></i>
+                        </a>
+                        <a href="${newsUrl}" target="_blank"
+                           class="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-3 card-tap">
+                            <div class="flex items-center gap-2">
+                                <span class="text-base">📰</span>
+                                <span class="text-xs font-bold text-slate-700">관련 최신 뉴스 보기</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-[9px] text-slate-400"></i>
+                        </a>
+                    </div>
+                </div>`;
+
+            document.getElementById('modal-content').innerHTML = holdingInfo + externalLinks;
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+
+        // ===================== NAVIGATION =====================
+        let currentTab = 'home';
+
+        function switchTab(tabId, pushHistory = true) {
+            currentTab = tabId;
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+
+            document.querySelectorAll('.nav-pill').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white');
+                btn.classList.add('text-slate-500');
+            });
+            const activeNav = document.getElementById('nav-' + tabId);
+            activeNav.classList.remove('text-slate-500');
+            activeNav.classList.add('bg-indigo-600', 'text-white');
+
+            if (tabId === 'portfolio') renderPortfolio(currentFilter);
+            if (tabId === 'tips') renderTips();
+
+            // 브라우저 히스토리에 탭 상태 기록 (뒤로/앞으로 가기 지원)
+            if (pushHistory) {
+                history.pushState({ tab: tabId }, '', '#' + tabId);
+            }
+        }
+
+        // 뒤로/앞으로 가기 → 앱 내 탭 전환
+        window.addEventListener('popstate', (e) => {
+            const tab = e.state?.tab || 'home';
+            switchTab(tab, false);
+        });
+
+        let currentFilter = 'all';
+        function filterPortfolio(f) {
+            currentFilter = f;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('bg-slate-900', 'text-white');
+                btn.classList.add('bg-slate-100', 'text-slate-500');
+            });
+            const btn = document.getElementById('filter-' + f);
+            btn.classList.remove('bg-slate-100', 'text-slate-500');
+            btn.classList.add('bg-slate-900', 'text-white');
+            renderPortfolio(f);
+        }
+
+        // ===================== AI HOME CONTENT (무료, API 키 불필요) =====================
+
+
+        // ① AI 앱 소식 — rss2json 직접 호출 (브라우저에서 바로, CORS 없음)
+        async function loadAIAppNews() {
+            const el = document.getElementById('ai-news-section');
+            try {
+                const feedUrl = 'https://news.google.com/rss/search?q=ChatGPT+Gemini+Claude+AI+업데이트&hl=ko&gl=KR&ceid=KR:ko';
+                const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}&count=5`;
+                const res = await fetch(apiUrl);
+                const data = await res.json();
+                if (data.status !== 'ok' || !data.items?.length) throw new Error('뉴스 없음');
+
+                const appEmojis = { 'chatgpt': '🤖', 'gemini': '✨', 'claude': '🧠', 'perplexity': '🔍', 'grok': '⚡', 'copilot': '💡', 'sora': '🎬', 'midjourney': '🎨' };
+                const getEmoji = title => {
+                    const t = title.toLowerCase();
+                    for (const [k, v] of Object.entries(appEmojis)) if (t.includes(k)) return v;
+                    return '🤖';
+                };
+
+                el.innerHTML = data.items.map(item => `
+                    <a href="${item.link}" target="_blank" class="block bg-white rounded-2xl p-4 border border-slate-100 shadow-sm card-tap">
+                        <div class="flex items-start gap-3">
+                            <div class="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center text-lg flex-shrink-0">${getEmoji(item.title)}</div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs font-bold text-slate-900 leading-snug mb-1">${item.title?.replace(/\s*-\s*[^-]{2,30}$/, '').trim()}</p>
+                                <p class="text-[9px] text-slate-400 font-bold">${item.author || '구글뉴스'} · ${item.pubDate ? new Date(item.pubDate).toLocaleDateString('ko-KR', {month:'short', day:'numeric'}) : ''}</p>
+                            </div>
+                            <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-slate-300 flex-shrink-0 mt-1"></i>
+                        </div>
+                    </a>
+                `).join('');
+            } catch(e) {
+                el.innerHTML = `<div class="bg-slate-50 rounded-2xl p-4 text-xs text-slate-400">뉴스를 불러오지 못했습니다.</div>`;
+            }
+        }
+
+        // ② AI 주식 소식 — rss2json 직접 호출
+        async function loadAIStockNews() {
+            const el = document.getElementById('ai-stock-news-section');
+            try {
+                const feedUrl = 'https://news.google.com/rss/search?q=AI+주식+나스닥+반도체+투자+전망&hl=ko&gl=KR&ceid=KR:ko';
+                const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}&count=5`;
+                const res = await fetch(apiUrl);
+                const data = await res.json();
+                if (data.status !== 'ok' || !data.items?.length) throw new Error('뉴스 없음');
+
+                const tickerColors = ['text-indigo-600 bg-indigo-50','text-emerald-600 bg-emerald-50','text-violet-600 bg-violet-50','text-blue-600 bg-blue-50','text-rose-600 bg-rose-50'];
+                const myStocks = ['GOOGL','MSFT','AMD','IONQ','SOUN','TLS','TSLA','MRNA','INVZ','NVIDIA','NVDA'];
+                const getMatchedTicker = title => {
+                    const t = title.toUpperCase();
+                    return myStocks.find(s => t.includes(s)) || 'AI';
+                };
+
+                el.innerHTML = data.items.map((item, i) => `
+                    <a href="${item.link}" target="_blank" class="block bg-white rounded-2xl p-4 border border-slate-100 shadow-sm card-tap">
+                        <div class="flex items-start gap-2.5">
+                            <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-md flex-shrink-0 mt-0.5 ${tickerColors[i % tickerColors.length]}">${getMatchedTicker(item.title)}</span>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs font-bold text-slate-900 leading-snug mb-1">${item.title?.replace(/\s*-\s*[^-]{2,30}$/, '').trim()}</p>
+                                <p class="text-[9px] text-slate-300 font-bold">구글뉴스 · ${item.pubDate ? new Date(item.pubDate).toLocaleDateString('ko-KR', {month:'short', day:'numeric'}) : ''}</p>
+                            </div>
+                            <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-slate-300 flex-shrink-0 mt-1"></i>
+                        </div>
+                    </a>
+                `).join('');
+            } catch(e) {
+                el.innerHTML = `<div class="bg-slate-50 rounded-2xl p-4 text-xs text-slate-400">뉴스를 불러오지 못했습니다.</div>`;
+            }
+        }
+
+        // ③ 5분 AI 팁 — 30개 내장, 날짜별 자동 순환 (완전 무료)
+        const AI_TIPS = [
+            { category:'프롬프트 엔지니어링', tool:'Claude', emoji:'🧠', title:'역할 부여로 답변 품질 3배 높이기', steps:['프롬프트 앞에 "당신은 10년 경력의 [직무] 전문가입니다"를 추가하세요','원하는 출력 형식을 구체적으로 지정하세요 (표, 번호 목록, 3줄 요약 등)','마지막에 "단계별로 생각하고 답변하세요"를 붙이면 정확도가 높아집니다'], proTip:'역할+형식+사고방식 3가지를 한 번에 지정하면 재질문 없이 원하는 답을 얻을 수 있습니다', timeEstimate:'3분' },
+            { category:'업무 자동화', tool:'ChatGPT', emoji:'⚡', title:'회의록 5분 만에 자동 정리', steps:['회의 중 핵심 발언만 메모장에 짧게 기록하세요','ChatGPT에 "아래 메모를 회의록으로 정리해줘: [메모]" 입력','결정사항/액션아이템/담당자/기한 형식으로 출력 요청'], proTip:'"Notion 표 형식으로" 또는 "이메일로 공유할 수 있게" 등 목적을 명시하면 바로 쓸 수 있는 결과가 나옵니다', timeEstimate:'5분' },
+            { category:'이미지 생성 AI', tool:'Midjourney', emoji:'🎨', title:'프로급 썸네일 무료로 만들기', steps:['Canva AI 또는 Adobe Firefly(무료)에 접속하세요','"미니멀 디자인, 흰 배경, 한국어 텍스트 포함" 등 스타일을 구체적으로 입력','생성된 이미지를 Canva에서 텍스트/로고만 추가해 완성'], proTip:'영어로 프롬프트를 작성할수록 품질이 높아집니다. ChatGPT에 한글 → 영어 프롬프트 변환을 먼저 요청하세요', timeEstimate:'5분' },
+            { category:'데이터 분석', tool:'ChatGPT', emoji:'📊', title:'엑셀 데이터 AI로 즉시 분석', steps:['분석하고 싶은 엑셀 파일을 ChatGPT에 첨부하세요','"이 데이터의 주요 트렌드와 이상값을 찾아줘"라고 요청','"경영진 보고용 3줄 요약으로 정리해줘"로 마무리'], proTip:'숫자 데이터는 "시각화 코드도 만들어줘"를 추가하면 파이썬 차트 코드까지 받을 수 있습니다', timeEstimate:'5분' },
+            { category:'AI 글쓰기', tool:'Claude', emoji:'✍️', title:'기획서 초안 10분 만에 완성', steps:['목적/대상/예산/기한 4가지만 메모하세요','Claude에 "아래 조건으로 기획서 초안을 작성해줘: [조건]" 입력','"더 설득력 있게", "수치 근거 추가", "임원 보고용으로 수정"으로 다듬기'], proTip:'처음부터 완벽한 결과를 기대하지 말고, 초안 → 수정 → 보완의 3단계 대화로 진행하세요', timeEstimate:'10분' },
+            { category:'AI 코딩', tool:'Claude', emoji:'💻', title:'코딩 몰라도 업무 자동화 가능', steps:['자동화하고 싶은 반복 업무를 한 문장으로 정리하세요','Claude에 "파이썬으로 [업무] 자동화 코드 만들어줘, 초보자용으로" 입력','"실행 방법도 단계별로 설명해줘"를 추가하면 설치부터 실행까지 안내받을 수 있습니다'], proTip:'오류가 나면 오류 메시지를 그대로 복사해서 "이 오류 해결해줘"라고 하면 됩니다', timeEstimate:'10분' },
+            { category:'생산성 극대화', tool:'Perplexity', emoji:'🚀', title:'리서치 시간 70% 줄이기', steps:['Perplexity.ai 접속 (무료, 로그인 불필요)','조사할 주제를 질문 형태로 입력하세요','출처 링크를 확인하고 중요한 내용만 북마크'], proTip:'Perplexity는 최신 웹 검색 결과를 요약해주므로, 시장조사·경쟁사 분석·업계 트렌드 파악에 가장 효과적입니다', timeEstimate:'3분' },
+            { category:'프롬프트 엔지니어링', tool:'ChatGPT', emoji:'🎯', title:'Few-shot으로 원하는 톤 설정', steps:['원하는 스타일의 예시 문장 2~3개를 먼저 보여주세요','"위 예시와 같은 톤으로 [내용]을 작성해줘"라고 요청','너무 딱딱하면 "조금 더 친근하게", 너무 가볍우면 "전문적으로" 즉시 수정 가능'], proTip:'회사 보고서, SNS 포스팅, 고객 이메일 등 용도별 예시를 미리 저장해두면 매번 재사용할 수 있습니다', timeEstimate:'3분' },
+            { category:'업무 자동화', tool:'Gemini', emoji:'🔄', title:'Google 워크스페이스 AI 활용', steps:['Gmail에서 Gemini 아이콘 클릭 → "이 이메일 요약해줘"','Google Docs에서 "@Gemini"로 초안 자동 작성','Google Sheets에서 함수 모르면 "이 계산을 수식으로 만들어줘" 입력'], proTip:'Google Workspace 계정이 있다면 Gemini가 이미 내장되어 있습니다. 별도 설치 없이 바로 사용 가능합니다', timeEstimate:'5분' },
+            { category:'이미지 생성 AI', tool:'Canva AI', emoji:'🖼️', title:'발표자료 디자인 AI로 자동화', steps:['Canva.com 접속 → "프레젠테이션" 선택','Magic Design 클릭 → 주제 입력 → 자동 슬라이드 생성','각 슬라이드의 텍스트만 수정하면 완성'], proTip:'Canva의 "Magic Write"로 슬라이드 내 텍스트도 AI가 자동 작성해줍니다. 디자인+글쓰기를 동시에 해결하세요', timeEstimate:'10분' },
+            { category:'데이터 분석', tool:'Claude', emoji:'📈', title:'복잡한 보고서 핵심만 추출', steps:['PDF나 긴 문서를 Claude에 붙여넣기 하세요','"3줄 요약", "핵심 수치만", "결론과 시사점만" 등으로 요청','여러 문서를 비교할 때는 "A와 B의 차이점을 표로 정리해줘" 활용'], proTip:'100페이지 보고서도 Claude에 올리면 핵심을 1분 안에 파악할 수 있습니다. 읽기 전 요약 먼저 받는 습관을 들이세요', timeEstimate:'3분' },
+            { category:'AI 글쓰기', tool:'ChatGPT', emoji:'📧', title:'이메일 답장 3초 만에 작성', steps:['받은 이메일을 복사해서 ChatGPT에 붙여넣기','"이 이메일에 [의도]로 답장 초안 작성해줘"','"더 간결하게" 또는 "더 정중하게" 한 마디로 즉시 수정'], proTip:'자주 쓰는 답장 유형(거절, 미팅 요청, 감사)의 프롬프트를 메모앱에 저장해두면 10초 만에 활용 가능합니다', timeEstimate:'1분' },
+            { category:'AI 코딩', tool:'ChatGPT', emoji:'🔧', title:'업무용 엑셀 매크로 자동 생성', steps:['자동화하고 싶은 엑셀 작업을 설명하세요','"VBA 매크로 코드로 만들어줘, 주석 포함"으로 요청','엑셀 → 개발 도구 → Visual Basic에 코드 붙여넣기'], proTip:'매크로 이름과 실행 버튼 만드는 방법도 함께 요청하면 동료에게 공유하기 좋은 완성품이 됩니다', timeEstimate:'10분' },
+            { category:'생산성 극대화', tool:'Claude', emoji:'💡', title:'복잡한 의사결정 AI와 함께', steps:['결정해야 할 상황과 선택지를 Claude에 설명하세요','"장단점 분석표를 만들어줘"로 객관적 비교','"내가 놓친 관점이 있다면 알려줘"로 사각지대 확인'], proTip:'AI의 의견을 참고하되 최종 결정은 본인이 내리세요. AI는 빠진 관점을 찾아주는 역할로 활용하면 가장 효과적입니다', timeEstimate:'5분' },
+            { category:'프롬프트 엔지니어링', tool:'Claude', emoji:'🔑', title:'Chain-of-Thought로 정확도 높이기', steps:['"단계별로 생각해서" 또는 "먼저 X를 분석하고, 그 다음 Y를 고려해서"라고 명시','복잡한 계산이나 논리 문제에 특히 효과적입니다','마지막에 "결론을 한 문장으로 요약해줘"를 추가'], proTip:'AI가 틀린 답을 낼 때 "다시 생각해봐"보다 "단계별로 다시 풀어봐"가 훨씬 효과적입니다', timeEstimate:'2분' },
+            { category:'업무 자동화', tool:'Perplexity', emoji:'📰', title:'업계 뉴스 모니터링 자동화', steps:['Perplexity.ai 접속 → "오늘 AI 업계 주요 뉴스 5개 요약해줘" 입력','매일 아침 같은 질문으로 루틴 만들기','중요한 내용은 "이걸 상사에게 보고할 3줄 요약으로" 즉시 변환'], proTip:'Perplexity는 출처를 함께 보여주기 때문에 신뢰도 높은 정보를 빠르게 검증할 수 있습니다', timeEstimate:'5분' },
+            { category:'AI 투자 활용', tool:'Perplexity', emoji:'📊', title:'보유 주식 최신 뉴스 5분 브리핑', steps:['Perplexity에 "IONQ, SOUN, TLS 최근 1주일 주요 뉴스 요약해줘" 입력','실적 발표일, 애널리스트 목표주가 변경 내용 확인','"이 종목 단기 리스크 요인이 뭐야?"로 추가 분석'], proTip:'매일 아침 보유 종목 3~4개씩 묶어서 질문하면 시간을 크게 절약할 수 있습니다', timeEstimate:'5분' },
+            { category:'AI 투자 활용', tool:'ChatGPT', emoji:'💹', title:'공시·실적 보고서 AI로 해석', steps:['DART(dart.fss.or.kr) 또는 SEC에서 실적 보고서 복사','ChatGPT에 붙여넣고 "핵심 지표와 전분기 대비 변화를 표로 정리해줘"','"이 실적이 주가에 긍정적일지 부정적일지 분석해줘"로 심층 분석'], proTip:'영어 보고서도 ChatGPT가 한국어로 바로 해석해줍니다. 해외주식 실적 시즌에 특히 유용합니다', timeEstimate:'10분' },
+            { category:'생산성 극대화', tool:'Claude', emoji:'🗂️', title:'회사 문서 템플릿 AI로 만들기', steps:['자주 쓰는 문서 양식(주간보고, 제안서 등)을 Claude에 설명하세요','"이 문서의 재사용 가능한 템플릿을 만들어줘"','빈칸([날짜], [담당자] 등)이 명확한 템플릿 저장'], proTip:'한번 만든 템플릿을 메모앱에 저장해두면 매주 30분씩 절약됩니다', timeEstimate:'10분' },
+            { category:'프롬프트 엔지니어링', tool:'ChatGPT', emoji:'🎭', title:'페르소나 설정으로 전문가 답변 받기', steps:['"당신은 15년 경력의 펀드매니저입니다. 아래 종목을 분석해주세요"처럼 역할 먼저 지정','"초보 투자자도 이해할 수 있게" 또는 "전문 용어로 상세히"로 수준 조정','원하는 형식(표, 글머리, 3줄 요약)을 함께 지정'], proTip:'역할+수준+형식 3가지를 한 번에 지정하면 재질문 없이 원하는 답을 받을 수 있습니다', timeEstimate:'3분' },
+            { category:'AI 글쓰기', tool:'Claude', emoji:'📝', title:'SNS 콘텐츠 한 번에 5개 만들기', steps:['공유하고 싶은 내용이나 링크를 Claude에 붙여넣기','"이 내용으로 LinkedIn, 인스타, 카카오채널용 각각 다른 톤으로 게시글 써줘"','해시태그도 함께 요청'], proTip:'플랫폼별로 최적 길이가 다릅니다. "인스타는 짧고 감성적으로, LinkedIn은 전문적으로"처럼 명시하세요', timeEstimate:'5분' },
+            { category:'이미지 생성 AI', tool:'Adobe Firefly', emoji:'🎨', title:'무료로 상업용 AI 이미지 만들기', steps:['firefly.adobe.com 접속 (무료, 어도비 계정 필요)','원하는 이미지를 한국어로 입력해도 인식됩니다','스타일, 색감, 구도를 추가로 지정하면 품질 향상'], proTip:'Adobe Firefly는 저작권이 보호된 이미지로만 학습해서 상업적으로 안전하게 사용할 수 있습니다', timeEstimate:'5분' },
+            { category:'데이터 분석', tool:'ChatGPT', emoji:'🔢', title:'복잡한 엑셀 함수 AI로 즉시 해결', steps:['원하는 계산을 말로 설명하세요 (예: "A열 날짜 중 이번 달 것만 B열 합계")','ChatGPT가 SUMIFS, VLOOKUP 등 정확한 함수를 생성','"이 함수가 왜 이렇게 작동하는지 설명해줘"로 학습도 병행'], proTip:'오류 메시지(#VALUE!, #REF!)를 캡처해서 보내면 원인과 해결책을 바로 알려줍니다', timeEstimate:'3분' },
+            { category:'AI 투자 활용', tool:'Perplexity', emoji:'🌐', title:'해외 투자 정보 실시간 한국어로', steps:['Perplexity에 "IONQ 최근 월가 애널리스트 목표주가 변경 내용 알려줘"','영어 뉴스도 한국어 요약으로 받을 수 있습니다','"긍정적 요인과 리스크 요인을 나눠서 정리해줘"로 구조화'], proTip:'Perplexity는 실시간 웹 검색 기반이라 방금 나온 뉴스도 바로 반영됩니다. 실적 발표 직후 활용하세요', timeEstimate:'5분' },
+        ];
+
+        function loadAITip() {
+            const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+            const tip = AI_TIPS[dayOfYear % AI_TIPS.length];
+            document.getElementById('ai-tip-section').innerHTML = `
+                <div class="bg-gradient-to-br from-violet-600 to-indigo-600 rounded-2xl p-5 text-white shadow-lg">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">${tip.emoji}</span>
+                            <div>
+                                <p class="text-[8px] font-bold text-violet-200 uppercase tracking-wider">${tip.category}</p>
+                                <p class="text-xs font-extrabold leading-tight">${tip.title}</p>
+                            </div>
+                        </div>
+                        <div class="bg-white/20 rounded-lg px-2 py-1 text-center flex-shrink-0">
+                            <p class="text-[8px] font-bold text-violet-100">소요시간</p>
+                            <p class="text-xs font-extrabold">${tip.timeEstimate}</p>
+                        </div>
+                    </div>
+                    <div class="bg-white/15 rounded-xl p-3 mb-3">
+                        <p class="text-[9px] font-bold text-violet-200 mb-2 uppercase tracking-wider">추천 도구: ${tip.tool}</p>
+                        <div class="space-y-2">
+                            ${tip.steps.map((step, i) => `
+                            <div class="flex items-start gap-2">
+                                <span class="w-4 h-4 rounded-full bg-white/30 flex items-center justify-center text-[8px] font-extrabold flex-shrink-0 mt-0.5">${i+1}</span>
+                                <p class="text-[10px] leading-relaxed text-white/90">${step}</p>
+                            </div>`).join('')}
+                        </div>
+                    </div>
+                    <div class="bg-yellow-400/20 rounded-xl p-3 flex items-start gap-2">
+                        <span class="text-yellow-300 text-sm flex-shrink-0">💡</span>
+                        <p class="text-[10px] text-yellow-100 leading-relaxed font-medium">${tip.proTip}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadAllHomeContent() {
+            loadAITip(); // 동기 함수 - 즉시 렌더링
+            await Promise.allSettled([
+                loadAIAppNews(),
+                loadAIStockNews()
+            ]);
+        }
+
+        async function syncPortfolioWithAI() {
+            const icon = document.getElementById('refresh-icon');
+            icon.classList.add('fa-spin');
+
+            // 실시간 주가 먼저 갱신
+            await fetchLivePrices();
+
+            // 로딩 상태 초기화
+            document.getElementById('ai-news-section').innerHTML = `<div class="bg-white rounded-2xl p-4 border border-slate-100"><div class="flex items-center gap-2 text-slate-300"><i class="fa-solid fa-circle-notch fa-spin text-xs"></i><span class="text-xs">AI 앱 소식 불러오는 중...</span></div></div>`;
+            document.getElementById('ai-stock-news-section').innerHTML = `<div class="bg-white rounded-2xl p-4 border border-slate-100"><div class="flex items-center gap-2 text-slate-300"><i class="fa-solid fa-circle-notch fa-spin text-xs"></i><span class="text-xs">전문가 의견 불러오는 중...</span></div></div>`;
+            document.getElementById('ai-tip-section').innerHTML = `<div class="bg-white rounded-2xl p-4 border border-slate-100"><div class="flex items-center gap-2 text-slate-300"><i class="fa-solid fa-circle-notch fa-spin text-xs"></i><span class="text-xs">AI 팁 생성 중...</span></div></div>`;
+
+            renderHome();
+            if (currentTab === 'portfolio') renderPortfolio(currentFilter);
+            if (currentTab === 'tips') renderTips();
+
+            await loadAllHomeContent();
+            icon.classList.remove('fa-spin');
+        }
+
+        // ===================== INIT =====================
+        window.onload = async () => {
+            history.replaceState({ tab: 'home' }, '', '#home');
+            renderHome();
+            document.getElementById('nav-home').classList.add('bg-indigo-600', 'text-white');
+            document.getElementById('nav-home').classList.remove('text-slate-500');
+
+            // 실시간 주가 즉시 로드 후 5분마다 자동 갱신
+            fetchLivePrices();
+            setInterval(fetchLivePrices, 5 * 60 * 1000);
+
+            loadAllHomeContent();
+        };
+    </script>
+</body>
+</html>
