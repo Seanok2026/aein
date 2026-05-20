@@ -784,7 +784,7 @@
             const el = document.getElementById('ai-news-section');
             try {
                 const feedUrl = 'https://news.google.com/rss/search?q=ChatGPT+Gemini+Claude+AI+업데이트&hl=ko&gl=KR&ceid=KR:ko';
-                const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}&count=5`;
+                const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}&api_key=zcmfftyni4cslinidvqu07q9x2xdyuahfubggnmj&count=5`;
                 const res = await fetch(apiUrl);
                 const data = await res.json();
                 if (data.status !== 'ok' || !data.items?.length) throw new Error('뉴스 없음');
@@ -818,7 +818,7 @@
             const el = document.getElementById('ai-stock-news-section');
             try {
                 const feedUrl = 'https://news.google.com/rss/search?q=AI+주식+나스닥+반도체+투자+전망&hl=ko&gl=KR&ceid=KR:ko';
-                const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}&count=5`;
+                const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}&api_key=zcmfftyni4cslinidvqu07q9x2xdyuahfubggnmj&count=5`;
                 const res = await fetch(apiUrl);
                 const data = await res.json();
                 if (data.status !== 'ok' || !data.items?.length) throw new Error('뉴스 없음');
