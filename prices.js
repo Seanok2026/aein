@@ -5,56 +5,62 @@ export default async function handler(req, res) {
   const { symbols } = req.query;
   if (!symbols) return res.status(400).json({ error: 'symbols required' });
 
-  const apiKey = process.env.FINNHUB_API_KEY;
+  const finnhubKey = process.env.FINNHUB_API_KEY;
+  const symbolList = symbols.split(',').map(s => s.trim()).filter(Boolean);
   const prices = {};
+  const log = [];
 
-  // ① 환율 (무료 API)
+  // ① 환율
   try {
     const r = await fetch('https://open.er-api.com/v6/latest/USD');
     const d = await r.json();
     if (d?.rates?.KRW) {
       prices['USDKRW=X'] = { price: d.rates.KRW, change: 0, changePercent: 0, currency: 'KRW' };
+      log.push(`환율OK: ${d.rates.KRW}`);
     }
-  } catch(e) {}
+  } catch(e) { log.push(`환율실패: ${e.message}`); }
 
-  if (!apiKey) {
-    return res.status(200).json({ prices, error: 'No API key' });
-  }
-
-  // ② 전 종목 Finnhub으로 통일
-  // 한국 주식: 005930.KS → Finnhub에서는 "005930.KS" 형식 지원
-  const symbolList = symbols.split(',')
-    .map(s => s.trim())
-    .filter(s => s && s !== 'USDKRW=X');
-
-  // Finnhub 심볼 변환
-  // 한국 KOSPI: 005930.KS → KS:005930
-  // 미국: GOOGL → GOOGL
-  const getFinnhubSymbol = (sym) => {
-    if (sym.endsWith('.KS')) return 'KS:' + sym.replace('.KS', '');
-    if (sym.endsWith('.KQ')) return 'KQ:' + sym.replace('.KQ', '');
-    return sym;
-  };
-
-  for (const sym of symbolList) {
-    const finnhubSym = getFinnhubSymbol(sym);
+  // ② 한국 주식 — Naver Finance
+  const krSymbols = symbolList.filter(s => s.includes('.KS') || s.includes('.KQ'));
+  log.push(`한국주식요청: ${krSymbols.join(',')}`);
+  
+  for (const sym of krSymbols) {
+    const code = sym.replace('.KS','').replace('.KQ','');
     try {
-      const r = await fetch(
-        `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(finnhubSym)}&token=${apiKey}`
-      );
+      const r = await fetch(`https://m.stock.naver.com/api/stock/${code}/basic`, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15',
+          'Referer': 'https://m.stock.naver.com/',
+          'Accept': 'application/json'
+        }
+      });
+      log.push(`${code} 응답코드: ${r.status}`);
+      if (!r.ok) continue;
       const d = await r.json();
-      if (d?.c && d.c > 0) {
-        prices[sym] = {
-          price: d.c,
-          change: d.d || 0,
-          changePercent: d.dp || 0,
-          currency: sym.includes('.KS') || sym.includes('.KQ') ? 'KRW' : 'USD'
-        };
+      const price = parseFloat((d?.closePrice || '0').replace(/,/g,''));
+      log.push(`${code} 가격: ${price}`);
+      if (price > 0) {
+        prices[sym] = { price, change: 0, changePercent: 0, currency: 'KRW' };
       }
-    } catch(e) {}
-    await new Promise(r => setTimeout(r, 80));
+    } catch(e) { log.push(`${code} 오류: ${e.message}`); }
   }
 
-  res.setHeader('Cache-Control', 'public, max-age=300');
-  return res.status(200).json({ prices, count: Object.keys(prices).length });
+  // ③ 미국 주식 — Finnhub
+  const usSymbols = symbolList.filter(s => !s.includes('.KS') && !s.includes('.KQ') && s !== 'USDKRW=X');
+  if (finnhubKey) {
+    for (const sym of usSymbols) {
+      try {
+        const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${finnhubKey}`);
+        const d = await r.json();
+        if (d?.c > 0) {
+          prices[sym] = { price: d.c, change: d.d||0, changePercent: d.dp||0, currency: 'USD' };
+        }
+      } catch(e) {}
+      await new Promise(r => setTimeout(r, 80));
+    }
+  }
+
+  console.log('PRICES_LOG:', JSON.stringify(log));
+  res.setHeader('Cache-Control', 'no-store');
+  return res.status(200).json({ prices, count: Object.keys(prices).length, log });
 }
