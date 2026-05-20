@@ -342,7 +342,10 @@
         const usSymbols = rawHoldings
             .filter(h => h.country === 'US' && !h.noData)
             .map(h => h.code);
-        const allSymbols = ['USDKRW=X', ...usSymbols].join(',');
+        const krSymbols = rawHoldings
+    .filter(h => h.country === 'KR' && !h.noData)
+    .map(h => h.code + '.KS');
+const allSymbols = ['USDKRW=X', ...usSymbols, ...krSymbols].join(',');
         const res = await fetch(`/api/prices?symbols=${encodeURIComponent(allSymbols)}`);
         const data = await res.json();
 
@@ -351,8 +354,9 @@
                 liveExchangeRate = data.prices['USDKRW=X'].price;
             }
             rawHoldings.forEach(h => {
-                if (h.country !== 'US' || h.noData) return;
-                const live = data.prices[h.code];
+                if (h.noData) return;
+const key = h.country === 'KR' ? h.code + '.KS' : h.code;
+const live = data.prices[key];
                 if (live?.price > 0) { h.price = live.price; h._live = true; }
             });
         }
