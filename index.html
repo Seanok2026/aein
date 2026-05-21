@@ -679,13 +679,13 @@
                 ? `<div class="bg-amber-50 rounded-xl p-4 text-xs text-amber-700 font-medium">현재가 정보가 없습니다. 보유량: ${item.amount.toLocaleString()}주</div>`
                 : `<div class="grid grid-cols-2 gap-2 mb-1">
                        <div class="${profitBg} rounded-xl p-3 text-center">
-                           <p class="text-[9px] text-slate-500 font-bold mb-0.5">총 수익률</p>
-                           <p class="text-base font-extrabold ${profitColor}">${item.change}</p>
+                           <p class="text-xs text-slate-500 font-bold mb-1">총 수익률</p>
+                           <p class="text-xl font-extrabold ${profitColor}">${item.change}</p>
                        </div>
                        <div class="${dayBg} rounded-xl p-3 text-center">
-                           <p class="text-[9px] text-slate-500 font-bold mb-0.5">전일비</p>
-                           <p class="text-base font-extrabold ${dayColor}">${daySign}${dayChangePct.toFixed(2)}%</p>
-                           <p class="text-[9px] ${dayColor} font-bold">${daySign}${item.currency === 'USD' ? '$' : '₩'}${Math.abs(dayChange).toLocaleString()}</p>
+                           <p class="text-xs text-slate-500 font-bold mb-1">전일비</p>
+                           <p class="text-xl font-extrabold ${dayColor}">${daySign}${dayChangePct.toFixed(2)}%</p>
+                           <p class="text-[11px] ${dayColor} font-bold mt-0.5">${daySign}${item.currency === 'USD' ? '$' : '₩'}${Math.abs(dayChange).toLocaleString()}</p>
                        </div>
                    </div>
                    <div class="space-y-2 pt-1">
