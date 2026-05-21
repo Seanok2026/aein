@@ -154,7 +154,7 @@
                     <div class="flex justify-between items-center mb-3 px-1">
                         <div class="flex items-center gap-2">
                             <span class="text-base">📊</span>
-                            <h2 class="text-xs font-display font-extrabold text-slate-900 uppercase tracking-tight">AI 주식 전문가 의견</h2>
+                            <h2 class="text-xs font-display font-extrabold text-slate-900 uppercase tracking-tight">주식 소식</h2>
                         </div>
                         <span class="text-[8px] font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full">Investing.com · 한국경제</span>
                     </div>
@@ -834,7 +834,7 @@
         async function loadAIStockNews() {
             const el = document.getElementById('ai-stock-news-section');
             try {
-                const feedUrl = 'https://news.google.com/rss/search?q=AI+주식+나스닥+반도체+투자+전망&hl=ko&gl=KR&ceid=KR:ko';
+                const feedUrl = `https://news.google.com/rss/search?q=미국증시+나스닥+뉴욕증시+주식+오늘&tbs=qdr:d&hl=ko&gl=KR&ceid=KR:ko`;
                 const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}&api_key=zcmfftyni4cslinidvqu07q9x2xdyuahfubggnmj&count=5`;
                 const res = await fetch(apiUrl);
                 const data = await res.json();
