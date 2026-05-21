@@ -367,6 +367,8 @@
                     const live = data.prices[key];
                     if (live?.price && live.price > 0) {
                         h.price = live.price;
+                        h.change = live.change || 0;
+                        h.changePercent = live.changePercent || 0;
                         h._live = true;
                         updatedCount++;
                     }
@@ -413,6 +415,8 @@
                     profit,
                     profitKrw,
                     profitRate,
+                    dayChange: h.change || 0,
+                    dayChangePercent: h.changePercent || 0,
                     change: (profitRate >= 0 ? "+" : "") + profitRate.toFixed(2) + "%"
                 };
             }).sort((a, b) => b.valueKrw - a.valueKrw);
@@ -665,11 +669,24 @@
             const profitBg   = item.profitRate >= 0 ? 'bg-emerald-50'    : 'bg-rose-50';
 
             // ① 기본 보유 정보 (즉시 표시)
+            const dayChange = item.dayChange || 0;
+            const dayChangePct = item.dayChangePercent || 0;
+            const dayColor = dayChange >= 0 ? 'text-emerald-600' : 'text-rose-500';
+            const dayBg = dayChange >= 0 ? 'bg-emerald-50' : 'bg-rose-50';
+            const daySign = dayChange >= 0 ? '+' : '';
+
             const holdingInfo = item.noData
                 ? `<div class="bg-amber-50 rounded-xl p-4 text-xs text-amber-700 font-medium">현재가 정보가 없습니다. 보유량: ${item.amount.toLocaleString()}주</div>`
-                : `<div class="${profitBg} rounded-xl p-4 flex justify-between items-center">
-                       <span class="text-sm font-bold text-slate-700">수익률</span>
-                       <span class="text-lg font-extrabold ${profitColor} font-display">${item.change}</span>
+                : `<div class="grid grid-cols-2 gap-2 mb-1">
+                       <div class="${profitBg} rounded-xl p-3 text-center">
+                           <p class="text-[9px] text-slate-500 font-bold mb-0.5">총 수익률</p>
+                           <p class="text-base font-extrabold ${profitColor} font-display">${item.change}</p>
+                       </div>
+                       <div class="${dayBg} rounded-xl p-3 text-center">
+                           <p class="text-[9px] text-slate-500 font-bold mb-0.5">전일비</p>
+                           <p class="text-base font-extrabold ${dayColor} font-display">${daySign}${dayChangePct.toFixed(2)}%</p>
+                           <p class="text-[9px] ${dayColor} font-bold">${daySign}${item.currency === 'USD' ? '$' : '₩'}${Math.abs(dayChange).toLocaleString()}</p>
+                       </div>
                    </div>
                    <div class="space-y-2 pt-1">
                        <div class="flex justify-between py-2 border-b border-slate-100">
