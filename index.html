@@ -830,12 +830,13 @@
             }
         }
 
-        // ② 주식 소식 — rss2json 직접 호출
+        // ② 주식 소식 — 여러 포털 기사 (구글뉴스 통해 한경, 매경, 연합, 머니투데이, 조선, 중앙 등)
         async function loadAIStockNews() {
             const el = document.getElementById('ai-stock-news-section');
             try {
-                const feedUrl = `https://news.google.com/rss/search?q=미국증시+나스닥+뉴욕증시+주식+오늘&tbs=qdr:d&hl=ko&gl=KR&ceid=KR:ko`;
-                const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}&api_key=zcmfftyni4cslinidvqu07q9x2xdyuahfubggnmj&count=10&_=${Date.now()}`;
+                // 다양한 포털 기사 포함 — 검색어 확대
+                const feedUrl = `https://news.google.com/rss/search?q=미국증시+OR+나스닥+OR+뉴욕증시+OR+주식시장+OR+코스피+OR+원달러&tbs=qdr:d&hl=ko&gl=KR&ceid=KR:ko`;
+                const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}&api_key=zcmfftyni4cslinidvqu07q9x2xdyuahfubggnmj&count=20&_=${Date.now()}`;
                 const res = await fetch(apiUrl);
                 const data = await res.json();
                 if (data.status !== 'ok' || !data.items?.length) throw new Error('뉴스 없음');
@@ -873,7 +874,7 @@
                             <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-md flex-shrink-0 mt-0.5 ${tickerColors[i % tickerColors.length]}">${getMatchedTicker(item.title)}</span>
                             <div class="flex-1 min-w-0">
                                 <p class="text-xs font-bold text-slate-900 leading-snug mb-1">${item.title?.replace(/\s*-\s*[^-]{2,30}$/, '').trim()}</p>
-                                <p class="text-[9px] text-slate-300 font-bold">구글뉴스 · ${item.pubDate ? new Date(item.pubDate).toLocaleDateString('ko-KR', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}) : ''}</p>
+                                <p class="text-[9px] text-slate-300 font-bold">${item.author || '구글뉴스'} · ${item.pubDate ? new Date(item.pubDate).toLocaleDateString('ko-KR', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}) : ''}</p>
                             </div>
                             <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-slate-300 flex-shrink-0 mt-1"></i>
                         </div>
