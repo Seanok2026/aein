@@ -1,7 +1,9 @@
 {
   "version": 2,
   "builds": [
-    { "src": "api/*.js", "use": "@vercel/node" },
+    { "src": "api/prices.js", "use": "@vercel/node" },
+    { "src": "api/rss.js", "use": "@vercel/node" },
+    { "src": "api/chart.js", "use": "@vercel/node" },
     { "src": "index.html", "use": "@vercel/static" },
     { "src": "icon.png", "use": "@vercel/static" }
   ],
@@ -10,12 +12,16 @@
     { "src": "/api/rss", "dest": "/api/rss.js" },
     { "src": "/api/chart", "dest": "/api/chart.js" },
     { "src": "/icon.png", "dest": "/icon.png" },
-    { "src": "/(.*)", "dest": "/api/index.js",
-      "headers": {
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        "Pragma": "no-cache",
-        "Expires": "0"
-      }
+    { "src": "/(.*)", "dest": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/index.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
+        { "key": "Pragma", "value": "no-cache" },
+        { "key": "Expires", "value": "0" }
+      ]
     }
   ]
 }
