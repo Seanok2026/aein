@@ -1076,6 +1076,13 @@
                 document.getElementById('chart-loading').style.display = 'none';
                 canvas.style.display = 'block';
 
+                // 차트 데이터를 시작점 대비 % 변화율로 정규화
+                const normalize = (arr) => {
+                    const first = arr.find(v => v != null);
+                    if (!first) return arr;
+                    return arr.map(v => v != null ? parseFloat(((v - first) / first * 100).toFixed(3)) : null);
+                };
+
                 new Chart(canvas, {
                     type: 'line',
                     data: {
@@ -1083,23 +1090,25 @@
                         datasets: [
                             ndx ? {
                                 label: '나스닥 100',
-                                data: ndx.data,
+                                data: normalize(ndx.data),
                                 borderColor: '#6366f1',
                                 backgroundColor: 'rgba(99,102,241,0.08)',
-                                borderWidth: 2,
-                                pointRadius: 0,
-                                tension: 0.4,
-                                fill: true,
+                                borderWidth: 2.5,
+                                pointRadius: 2,
+                                pointHoverRadius: 5,
+                                tension: 0.3,
+                                fill: false,
                             } : null,
                             spx ? {
                                 label: 'S&P 500',
-                                data: spx.data,
+                                data: normalize(spx.data),
                                 borderColor: '#10b981',
                                 backgroundColor: 'rgba(16,185,129,0.08)',
-                                borderWidth: 2,
-                                pointRadius: 0,
-                                tension: 0.4,
-                                fill: true,
+                                borderWidth: 2.5,
+                                pointRadius: 2,
+                                pointHoverRadius: 5,
+                                tension: 0.3,
+                                fill: false,
                             } : null,
                         ].filter(Boolean),
                     },
@@ -1115,17 +1124,15 @@
                             tooltip: {
                                 callbacks: {
                                     label: ctx => {
-                                        const val = ctx.parsed.y;
-                                        const data = ctx.dataset.data;
+                                        const pct = ctx.parsed.y;
                                         const idx = ctx.dataIndex;
+                                        const data = ctx.dataset.data;
                                         const prev = idx > 0 ? data[idx - 1] : null;
-                                        const change = prev ? val - prev : null;
-                                        const changePct = prev ? ((change / prev) * 100).toFixed(2) : null;
-                                        const sign = change >= 0 ? '+' : '';
-                                        const changeStr = change !== null
-                                            ? `  ${sign}${change >= 1000 ? (change/1000).toFixed(1)+'K' : change.toFixed(1)} (${sign}${changePct}%)`
-                                            : '';
-                                        return ` ${ctx.dataset.label}: ${val?.toLocaleString()}${changeStr}`;
+                                        const daily = prev !== null ? (pct - prev).toFixed(2) : null;
+                                        const sign = pct >= 0 ? '+' : '';
+                                        const dailySign = daily >= 0 ? '+' : '';
+                                        const dailyStr = daily !== null ? `  (전일비 ${dailySign}${daily}%)` : '';
+                                        return ` ${ctx.dataset.label}: ${sign}${pct}%${dailyStr}`;
                                     }
                                 }
                             }
@@ -1136,19 +1143,9 @@
                                 grid: { display: false }
                             },
                             y: {
-                                min: (context) => {
-                                    const allData = context.chart.data.datasets.flatMap(d => d.data).filter(v => v != null);
-                                    const min = Math.min(...allData);
-                                    return Math.floor(min * 0.995);
-                                },
-                                max: (context) => {
-                                    const allData = context.chart.data.datasets.flatMap(d => d.data).filter(v => v != null);
-                                    const max = Math.max(...allData);
-                                    return Math.ceil(max * 1.005);
-                                },
                                 ticks: {
                                     font: { size: 9 },
-                                    callback: v => v >= 1000 ? (v/1000).toFixed(1)+'K' : v
+                                    callback: v => v.toFixed(1) + '%'
                                 },
                                 grid: { color: 'rgba(0,0,0,0.05)' }
                             }
