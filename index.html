@@ -291,51 +291,46 @@
 
     <script>
         // ===================== DATA =====================
-        const exchangeRate = 1498.10;
+        const exchangeRate = 1503.00;
 
-        // CSV 기반 정확한 데이터 (260516 기준)
+        // CSV 기반 정확한 데이터 (260531 기준)
         const rawHoldings = [
-            // --- 국내 ISA (260516_국내_ISA주식_현황.csv) ---
-            { name: "DB손해보험",            code: "005830", amount: 77,    buyPrice: 145500,    price: 164500,   country: "KR", currency: "KRW", account: "ISA" },
-            { name: "TIGER 미국나스닥100",    code: "133690", amount: 5,     buyPrice: 141820,    price: 194300,   country: "KR", currency: "KRW", account: "ISA" },
-            { name: "TIGER 미국S&P500",      code: "360750", amount: 441,   buyPrice: 24450,     price: 27765,    country: "KR", currency: "KRW", account: "ISA" },
-            { name: "KODEX 인도Nifty50",     code: "453810", amount: 350,   buyPrice: 14135,     price: 12535,    country: "KR", currency: "KRW", account: "ISA" },
-            { name: "KODEX CD금리액티브",     code: "459580", amount: 22,    buyPrice: 1075515,   price: 1074860,  country: "KR", currency: "KRW", account: "ISA" },
-            { name: "삼성전자",               code: "005930", amount: 264,   buyPrice: 150000,    price: 270500,   country: "KR", currency: "KRW", account: "ISA" },
+            // --- 국내 ISA (260531_국내_ISA주식_현황.csv) ---
+            { name: "DB손해보험",                    code: "005830", amount: 77,    buyPrice: 145500,   price: 143100,   country: "KR", currency: "KRW", account: "ISA" },
+            { name: "TIGER 미국나스닥100",            code: "133690", amount: 57,    buyPrice: 188647,   price: 201945,   country: "KR", currency: "KRW", account: "ISA" },
+            { name: "TIGER 미국S&P500",              code: "360750", amount: 441,   buyPrice: 24450,    price: 28300,    country: "KR", currency: "KRW", account: "ISA" },
+            { name: "KODEX 인도Nifty50",             code: "453810", amount: 350,   buyPrice: 14135,    price: 12625,    country: "KR", currency: "KRW", account: "ISA" },
+            { name: "KODEX CD금리액티브",             code: "459580", amount: 22,    buyPrice: 1075515,  price: 1073565,  country: "KR", currency: "KRW", account: "ISA" },
 
-            // --- 국내 일반 (260516_국내_일반주식_현황.csv) ---
-            { name: "PLUS 글로벌휴머노이드로봇액티브", code: "0035T0", amount: 300,   buyPrice: 11300, price: 24625, country: "KR", currency: "KRW", account: "일반" },
-            { name: "한국자산신탁",           code: "123890", amount: 2375,  buyPrice: 4229,      price: 2425,     country: "KR", currency: "KRW", account: "일반" },
+            // --- 국내 일반 (260531_국내_일반주식_현황.csv) ---
+            { name: "PLUS 글로벌휴머노이드로봇액티브", code: "0035T0", amount: 300,   buyPrice: 11300,    price: 26520,    country: "KR", currency: "KRW", account: "일반" },
+            { name: "한국자산신탁",                   code: "123890", amount: 2375,  buyPrice: 4229,     price: 2300,     country: "KR", currency: "KRW", account: "일반" },
 
-            // --- 해외 일반 (260516_해외_일반주식_현황.csv) ---
-            { name: "ABSI (압사이)",          code: "ABSI",   amount: 500,   buyPrice: 2.7500,    price: 5.1300,   country: "US", currency: "USD" },
-            { name: "AISP (에어십 AI)",       code: "AISP",   amount: 1335,  buyPrice: 6.1318,    price: 2.4000,   country: "US", currency: "USD" },
-            { name: "AMD",                    code: "AMD",    amount: 1,     buyPrice: 100.0000,  price: 424.1000, country: "US", currency: "USD" },
-
-            { name: "CEVA (세바)",            code: "CEVA",   amount: 46,    buyPrice: 26.9600,   price: 36.5100,  country: "US", currency: "USD" },
-
-            { name: "CHRD (코드 에너지)",      code: "CHRD",   amount: 21,    buyPrice: 106.6500,  price: 148.3900, country: "US", currency: "USD" },
-            { name: "CRWV (코어위브)",        code: "CRWV",   amount: 1,     buyPrice: 54.0000,   price: 107.3000, country: "US", currency: "USD" },
-            { name: "GOOGL (알파벳)",         code: "GOOGL",  amount: 20,    buyPrice: 173.0000,  price: 396.7800, country: "US", currency: "USD" },
-            { name: "INVZ (이노비즈)",        code: "INVZ",   amount: 3000,  buyPrice: 1.7232,    price: 0.7360,   country: "US", currency: "USD" },
-            { name: "IONQ (아이온큐)",        code: "IONQ",   amount: 121,   buyPrice: 38.0000,   price: 51.9500,  country: "US", currency: "USD" },
-
-            { name: "MRNA (모더나)",          code: "MRNA",   amount: 200,   buyPrice: 24.5000,   price: 49.0400,  country: "US", currency: "USD" },
-            { name: "MSFT (마이크로소프트)",   code: "MSFT",   amount: 17,    buyPrice: 479.4117,  price: 421.9200, country: "US", currency: "USD" },
-            { name: "SNOW (스노우플레이크)",   code: "SNOW",   amount: 1,     buyPrice: 168.9000,  price: 157.4700, country: "US", currency: "USD" },
-            { name: "SOUN (사운드하운드 AI)",  code: "SOUN",   amount: 200,   buyPrice: 9.6800,    price: 8.4100,   country: "US", currency: "USD" },
-            { name: "SSTK (셔터스톡)",        code: "SSTK",   amount: 20,    buyPrice: 16.9000,   price: 16.5200,  country: "US", currency: "USD" },
-            { name: "TLS (텔로스)",           code: "TLS",    amount: 1890,  buyPrice: 2.8955,    price: 4.2000,   country: "US", currency: "USD" },
-            { name: "TSLA (테슬라)",          code: "TSLA",   amount: 20,    buyPrice: 315.0000,  price: 422.2400, country: "US", currency: "USD" },
-
-            { name: "VVX (V2X)",              code: "VVX",    amount: 77,    buyPrice: 47.0000,   price: 68.4401,  country: "US", currency: "USD" },
-
+            // --- 해외 일반 (260531_해외_일반주식_현황.csv) ---
+            { name: "ABSI (압사이)",                  code: "ABSI",   amount: 250,   buyPrice: 2.7500,   price: 6.7500,   country: "US", currency: "USD" },
+            { name: "AISP (에어십 AI)",               code: "AISP",   amount: 1335,  buyPrice: 6.1318,   price: 3.0200,   country: "US", currency: "USD" },
+            { name: "AMD",                            code: "AMD",    amount: 1,     buyPrice: 100.0000, price: 516.1000, country: "US", currency: "USD" },
+            { name: "CEVA (세바)",                    code: "CEVA",   amount: 46,    buyPrice: 26.9600,  price: 39.9800,  country: "US", currency: "USD" },
+            { name: "CHRD (코드 에너지)",              code: "CHRD",   amount: 21,    buyPrice: 106.6500, price: 134.5000, country: "US", currency: "USD" },
+            { name: "CRWV (코어위브)",                code: "CRWV",   amount: 1,     buyPrice: 54.0000,  price: 109.5300, country: "US", currency: "USD" },
+            { name: "GOOGL (알파벳)",                 code: "GOOGL",  amount: 20,    buyPrice: 173.0000, price: 380.3400, country: "US", currency: "USD" },
+            { name: "INVZ (이노비즈)",                code: "INVZ",   amount: 3000,  buyPrice: 1.7232,   price: 0.7631,   country: "US", currency: "USD" },
+            { name: "IONQ (아이온큐)",                code: "IONQ",   amount: 121,   buyPrice: 38.0000,  price: 72.0700,  country: "US", currency: "USD" },
+            { name: "MRNA (모더나)",                  code: "MRNA",   amount: 200,   buyPrice: 24.5000,  price: 47.1900,  country: "US", currency: "USD" },
+            { name: "MSFT (마이크로소프트)",           code: "MSFT",   amount: 17,    buyPrice: 479.4117, price: 450.2400, country: "US", currency: "USD" },
+            { name: "RZLV (리졸브 AI)",               code: "RZLV",   amount: 2000,  buyPrice: 2.5000,   price: 2.9800,   country: "US", currency: "USD" },
+            { name: "SNOW (스노우플레이크)",           code: "SNOW",   amount: 1,     buyPrice: 168.9000, price: 255.5500, country: "US", currency: "USD" },
+            { name: "SOUN (사운드하운드 AI)",          code: "SOUN",   amount: 200,   buyPrice: 9.6800,   price: 9.0000,   country: "US", currency: "USD" },
+            { name: "SSTK (셔터스톡)",                code: "SSTK",   amount: 20,    buyPrice: 16.9000,  price: 14.8900,  country: "US", currency: "USD" },
+            { name: "TLS (텔로스)",                   code: "TLS",    amount: 1890,  buyPrice: 2.8955,   price: 4.7900,   country: "US", currency: "USD" },
+            { name: "TSLA (테슬라)",                  code: "TSLA",   amount: 20,    buyPrice: 315.0000, price: 435.7900, country: "US", currency: "USD" },
+            { name: "VVX (V2X)",                     code: "VVX",    amount: 77,    buyPrice: 47.0000,  price: 83.1300,  country: "US", currency: "USD" },
         ];
 
         // ===================== COMPUTED =====================
 
         // 실시간 주가 업데이트 (Yahoo Finance via Vercel API)
-        let liveExchangeRate = 1498.10; // 기본값, 실시간 업데이트됨
+        let liveExchangeRate = 1503.00; // 기본값, 실시간 업데이트됨
 
         async function fetchLivePrices() {
             try {
