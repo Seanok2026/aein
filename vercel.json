@@ -8,6 +8,7 @@
   "routes": [
     { "src": "/api/prices", "dest": "/api/prices.js" },
     { "src": "/api/rss", "dest": "/api/rss.js" },
+    { "src": "/api/chart", "dest": "/api/chart.js" },
     { "src": "/icon.png", "dest": "/icon.png" },
     { "src": "/(.*)", "dest": "/api/index.js",
       "headers": {
