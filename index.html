@@ -9,6 +9,7 @@
     <title>애인 - 전 종목 통합 포트폴리오</title>
     <link rel="apple-touch-icon" href="/icon.png">
     <link rel="icon" type="image/png" href="/icon.png">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -74,13 +75,15 @@
                     <h3 id="total-asset-display" class="text-[28px] font-display font-extrabold text-white tracking-tight mb-0.5">₩ 계산중...</h3>
                     <p id="total-profit-display" class="text-sm font-bold mb-5 text-slate-300">수익 계산중...</p>
                     <div class="grid grid-cols-3 gap-3">
-                        <div class="bg-white/8 rounded-xl p-3">
-                            <p class="text-[9px] text-slate-400 font-bold mb-1">국내</p>
-                            <p id="kr-total" class="text-white text-xs font-bold">-</p>
+                        <div onclick="openBrokerModal('키움')" class="bg-white/8 rounded-xl p-3 cursor-pointer card-tap active:bg-white/20">
+                            <p class="text-[9px] text-slate-400 font-bold mb-1">키움증권</p>
+                            <p id="kiwoom-total" class="text-white text-xs font-bold">-</p>
+                            <p class="text-[8px] text-indigo-300 mt-0.5">탭하여 확인 →</p>
                         </div>
-                        <div class="bg-white/8 rounded-xl p-3">
-                            <p class="text-[9px] text-slate-400 font-bold mb-1">해외</p>
-                            <p id="us-total" class="text-white text-xs font-bold">-</p>
+                        <div onclick="openBrokerModal('삼성')" class="bg-white/8 rounded-xl p-3 cursor-pointer card-tap active:bg-white/20">
+                            <p class="text-[9px] text-slate-400 font-bold mb-1">삼성증권</p>
+                            <p id="samsung-total" class="text-white text-xs font-bold">-</p>
+                            <p class="text-[8px] text-indigo-300 mt-0.5">탭하여 확인 →</p>
                         </div>
                         <div class="bg-white/8 rounded-xl p-3">
                             <p class="text-[9px] text-slate-400 font-bold mb-1">종목수</p>
@@ -133,58 +136,54 @@
                     </div>
                 </div>
 
-                <!-- AI 앱 업그레이드 소식 -->
+                <!-- 나스닥100 / S&P500 차트 -->
                 <div class="mx-4 mt-5">
                     <div class="flex justify-between items-center mb-3 px-1">
                         <div class="flex items-center gap-2">
-                            <span class="text-base">🤖</span>
-                            <h2 class="text-xs font-display font-extrabold text-slate-900 uppercase tracking-tight">AI 앱 최신 소식</h2>
+                            <span class="text-base">📈</span>
+                            <h2 class="text-xs font-display font-extrabold text-slate-900 uppercase tracking-tight">나스닥100 · S&P500</h2>
                         </div>
-                        <span class="text-[8px] font-bold text-indigo-400 bg-indigo-50 px-2 py-0.5 rounded-full">블로터 · AI타임스 · 전자신문</span>
+                        <span id="chart-period" class="text-[8px] font-bold text-indigo-400 bg-indigo-50 px-2 py-0.5 rounded-full">1개월</span>
                     </div>
-                    <div id="ai-news-section" class="space-y-2.5">
-                        <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
-                            <div class="flex items-center gap-2 text-slate-300">
-                                <i class="fa-solid fa-circle-notch fa-spin text-xs"></i>
-                                <span class="text-xs">AI 앱 소식 불러오는 중...</span>
-                            </div>
+
+                    <!-- 지수 현재가 요약 -->
+                    <div class="grid grid-cols-2 gap-2 mb-3">
+                        <div id="ndx-summary" class="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm text-center">
+                            <p class="text-[9px] text-slate-400 font-bold mb-1">나스닥 100</p>
+                            <p id="ndx-price" class="text-sm font-extrabold text-slate-900">-</p>
+                            <p id="ndx-change" class="text-[10px] font-bold mt-0.5">-</p>
                         </div>
+                        <div id="spx-summary" class="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm text-center">
+                            <p class="text-[9px] text-slate-400 font-bold mb-1">S&P 500</p>
+                            <p id="spx-price" class="text-sm font-extrabold text-slate-900">-</p>
+                            <p id="spx-change" class="text-[10px] font-bold mt-0.5">-</p>
+                        </div>
+                    </div>
+
+                    <!-- 차트 -->
+                    <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+                        <div id="chart-loading" class="flex items-center gap-2 text-slate-300 justify-center py-8">
+                            <i class="fa-solid fa-circle-notch fa-spin text-xs"></i>
+                            <span class="text-xs">차트 불러오는 중...</span>
+                        </div>
+                        <canvas id="index-chart" style="display:none; width:100%; height:180px;"></canvas>
                     </div>
                 </div>
 
-                <!-- AI 관련 주식 소식 -->
+                <!-- 주식 소식 -->
                 <div class="mx-4 mt-5">
                     <div class="flex justify-between items-center mb-3 px-1">
                         <div class="flex items-center gap-2">
                             <span class="text-base">📊</span>
                             <h2 class="text-xs font-display font-extrabold text-slate-900 uppercase tracking-tight">주식 소식</h2>
                         </div>
-                        <span class="text-[8px] font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full">Investing.com · 한국경제</span>
+                        <span class="text-[8px] font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full">오늘의 최신 뉴스</span>
                     </div>
                     <div id="ai-stock-news-section" class="space-y-2.5">
                         <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
                             <div class="flex items-center gap-2 text-slate-300">
                                 <i class="fa-solid fa-circle-notch fa-spin text-xs"></i>
-                                <span class="text-xs">전문가 의견 불러오는 중...</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 오늘의 5분 AI 팁 -->
-                <div class="mx-4 mt-5">
-                    <div class="flex justify-between items-center mb-3 px-1">
-                        <div class="flex items-center gap-2">
-                            <span class="text-base">⚡</span>
-                            <h2 class="text-xs font-display font-extrabold text-slate-900 uppercase tracking-tight">오늘의 5분 AI 팁</h2>
-                        </div>
-                        <span class="text-[8px] font-bold text-violet-500 bg-violet-50 px-2 py-0.5 rounded-full">실전 활용</span>
-                    </div>
-                    <div id="ai-tip-section">
-                        <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
-                            <div class="flex items-center gap-2 text-slate-300">
-                                <i class="fa-solid fa-circle-notch fa-spin text-xs"></i>
-                                <span class="text-xs">AI 팁 생성 중...</span>
+                                <span class="text-xs">뉴스 불러오는 중...</span>
                             </div>
                         </div>
                     </div>
@@ -298,36 +297,58 @@
 
         // CSV 기반 정확한 데이터 (260531 기준)
         const rawHoldings = [
-            // --- 국내 ISA (260531_국내_ISA주식_현황.csv) ---
-            { name: "DB손해보험",                    code: "005830", amount: 77,    buyPrice: 145500,   price: 143100,   country: "KR", currency: "KRW", account: "ISA" },
-            { name: "TIGER 미국나스닥100",            code: "133690", amount: 57,    buyPrice: 188647,   price: 201945,   country: "KR", currency: "KRW", account: "ISA" },
-            { name: "TIGER 미국S&P500",              code: "360750", amount: 441,   buyPrice: 24450,    price: 28300,    country: "KR", currency: "KRW", account: "ISA" },
-            { name: "KODEX 인도Nifty50",             code: "453810", amount: 350,   buyPrice: 14135,    price: 12625,    country: "KR", currency: "KRW", account: "ISA" },
-            { name: "KODEX CD금리액티브",             code: "459580", amount: 22,    buyPrice: 1075515,  price: 1073565,  country: "KR", currency: "KRW", account: "ISA" },
+            // ========== 키움증권 ==========
+            // --- 국내 ISA ---
+            { name: "DB손해보험",                    code: "005830", amount: 77,         buyPrice: 145500,   price: 143100,   country: "KR", currency: "KRW", account: "ISA",    broker: "키움" },
+            { name: "TIGER 미국나스닥100",            code: "133690", amount: 57,         buyPrice: 188647,   price: 201945,   country: "KR", currency: "KRW", account: "ISA",    broker: "키움" },
+            { name: "TIGER 미국S&P500",              code: "360750", amount: 441,        buyPrice: 24450,    price: 28300,    country: "KR", currency: "KRW", account: "ISA",    broker: "키움" },
+            { name: "KODEX 인도Nifty50",             code: "453810", amount: 350,        buyPrice: 14135,    price: 12625,    country: "KR", currency: "KRW", account: "ISA",    broker: "키움" },
+            { name: "KODEX CD금리액티브",             code: "459580", amount: 22,         buyPrice: 1075515,  price: 1073565,  country: "KR", currency: "KRW", account: "ISA",    broker: "키움" },
 
-            // --- 국내 일반 (260531_국내_일반주식_현황.csv) ---
-            { name: "PLUS 글로벌휴머노이드로봇액티브", code: "0035T0", amount: 300,   buyPrice: 11300,    price: 26520,    country: "KR", currency: "KRW", account: "일반" },
-            { name: "한국자산신탁",                   code: "123890", amount: 2375,  buyPrice: 4229,     price: 2300,     country: "KR", currency: "KRW", account: "일반" },
+            // --- 국내 일반 ---
+            { name: "PLUS 글로벌휴머노이드로봇액티브", code: "0035T0", amount: 300,        buyPrice: 11300,    price: 26520,    country: "KR", currency: "KRW", account: "일반",   broker: "키움" },
+            { name: "한국자산신탁",                   code: "123890", amount: 2375,       buyPrice: 4229,     price: 2300,     country: "KR", currency: "KRW", account: "일반",   broker: "키움" },
 
-            // --- 해외 일반 (260531_해외_일반주식_현황.csv) ---
-            { name: "ABSI (압사이)",                  code: "ABSI",   amount: 250,   buyPrice: 2.7500,   price: 6.7500,   country: "US", currency: "USD" },
-            { name: "AISP (에어십 AI)",               code: "AISP",   amount: 1335,  buyPrice: 6.1318,   price: 3.0200,   country: "US", currency: "USD" },
-            { name: "AMD",                            code: "AMD",    amount: 1,     buyPrice: 100.0000, price: 516.1000, country: "US", currency: "USD" },
-            { name: "CEVA (세바)",                    code: "CEVA",   amount: 46,    buyPrice: 26.9600,  price: 39.9800,  country: "US", currency: "USD" },
-            { name: "CHRD (코드 에너지)",              code: "CHRD",   amount: 21,    buyPrice: 106.6500, price: 134.5000, country: "US", currency: "USD" },
-            { name: "CRWV (코어위브)",                code: "CRWV",   amount: 1,     buyPrice: 54.0000,  price: 109.5300, country: "US", currency: "USD" },
-            { name: "GOOGL (알파벳)",                 code: "GOOGL",  amount: 20,    buyPrice: 173.0000, price: 380.3400, country: "US", currency: "USD" },
-            { name: "INVZ (이노비즈)",                code: "INVZ",   amount: 3000,  buyPrice: 1.7232,   price: 0.7631,   country: "US", currency: "USD" },
-            { name: "IONQ (아이온큐)",                code: "IONQ",   amount: 121,   buyPrice: 38.0000,  price: 72.0700,  country: "US", currency: "USD" },
-            { name: "MRNA (모더나)",                  code: "MRNA",   amount: 200,   buyPrice: 24.5000,  price: 47.1900,  country: "US", currency: "USD" },
-            { name: "MSFT (마이크로소프트)",           code: "MSFT",   amount: 17,    buyPrice: 479.4117, price: 450.2400, country: "US", currency: "USD" },
-            { name: "RZLV (리졸브 AI)",               code: "RZLV",   amount: 2000,  buyPrice: 2.5000,   price: 2.9800,   country: "US", currency: "USD" },
-            { name: "SNOW (스노우플레이크)",           code: "SNOW",   amount: 1,     buyPrice: 168.9000, price: 255.5500, country: "US", currency: "USD" },
-            { name: "SOUN (사운드하운드 AI)",          code: "SOUN",   amount: 200,   buyPrice: 9.6800,   price: 9.0000,   country: "US", currency: "USD" },
-            { name: "SSTK (셔터스톡)",                code: "SSTK",   amount: 20,    buyPrice: 16.9000,  price: 14.8900,  country: "US", currency: "USD" },
-            { name: "TLS (텔로스)",                   code: "TLS",    amount: 1890,  buyPrice: 2.8955,   price: 4.7900,   country: "US", currency: "USD" },
-            { name: "TSLA (테슬라)",                  code: "TSLA",   amount: 20,    buyPrice: 315.0000, price: 435.7900, country: "US", currency: "USD" },
-            { name: "VVX (V2X)",                     code: "VVX",    amount: 77,    buyPrice: 47.0000,  price: 83.1300,  country: "US", currency: "USD" },
+            // --- 해외 일반 ---
+            { name: "ABSI (압사이)",                  code: "ABSI",   amount: 250,        buyPrice: 2.7500,   price: 6.7500,   country: "US", currency: "USD", broker: "키움" },
+            { name: "AISP (에어십 AI)",               code: "AISP",   amount: 1335,       buyPrice: 6.1318,   price: 3.0200,   country: "US", currency: "USD", broker: "키움" },
+            { name: "AMD",                            code: "AMD",    amount: 1,          buyPrice: 100.0000, price: 516.1000, country: "US", currency: "USD", broker: "키움" },
+            { name: "CEVA (세바)",                    code: "CEVA",   amount: 46,         buyPrice: 26.9600,  price: 39.9800,  country: "US", currency: "USD", broker: "키움" },
+            { name: "CHRD (코드 에너지)",              code: "CHRD",   amount: 21,         buyPrice: 106.6500, price: 134.5000, country: "US", currency: "USD", broker: "키움" },
+            { name: "CRWV (코어위브)",                code: "CRWV",   amount: 1,          buyPrice: 54.0000,  price: 109.5300, country: "US", currency: "USD", broker: "키움" },
+            { name: "GOOGL (알파벳)",                 code: "GOOGL",  amount: 20,         buyPrice: 173.0000, price: 380.3400, country: "US", currency: "USD", broker: "키움" },
+            { name: "INVZ (이노비즈)",                code: "INVZ",   amount: 3000,       buyPrice: 1.7232,   price: 0.7631,   country: "US", currency: "USD", broker: "키움" },
+            { name: "IONQ (아이온큐)",                code: "IONQ",   amount: 121,        buyPrice: 38.0000,  price: 72.0700,  country: "US", currency: "USD", broker: "키움" },
+            { name: "MRNA (모더나)",                  code: "MRNA",   amount: 200,        buyPrice: 24.5000,  price: 47.1900,  country: "US", currency: "USD", broker: "키움" },
+            { name: "MSFT (마이크로소프트)",           code: "MSFT",   amount: 17,         buyPrice: 479.4117, price: 450.2400, country: "US", currency: "USD", broker: "키움" },
+            { name: "RZLV (리졸브 AI)",               code: "RZLV",   amount: 2000,       buyPrice: 2.5000,   price: 2.9800,   country: "US", currency: "USD", broker: "키움" },
+            { name: "SNOW (스노우플레이크)",           code: "SNOW",   amount: 1,          buyPrice: 168.9000, price: 255.5500, country: "US", currency: "USD", broker: "키움" },
+            { name: "SOUN (사운드하운드 AI)",          code: "SOUN",   amount: 200,        buyPrice: 9.6800,   price: 9.0000,   country: "US", currency: "USD", broker: "키움" },
+            { name: "SSTK (셔터스톡)",                code: "SSTK",   amount: 20,         buyPrice: 16.9000,  price: 14.8900,  country: "US", currency: "USD", broker: "키움" },
+            { name: "TLS (텔로스)",                   code: "TLS",    amount: 1890,       buyPrice: 2.8955,   price: 4.7900,   country: "US", currency: "USD", broker: "키움" },
+            { name: "TSLA (테슬라)",                  code: "TSLA",   amount: 20,         buyPrice: 315.0000, price: 435.7900, country: "US", currency: "USD", broker: "키움" },
+            { name: "VVX (V2X)",                     code: "VVX",    amount: 77,         buyPrice: 47.0000,  price: 83.1300,  country: "US", currency: "USD", broker: "키움" },
+
+            // ========== 삼성증권 ==========
+            // --- 연금저축 CMA ---
+            { name: "삼성신종종류형MMF제4호",          code: "MMF4",   amount: 109132111,  buyPrice: 0.9779,   price: 1010,     country: "KR", currency: "KRW", account: "연금저축CMA", broker: "삼성", isFund: true, fixedValue: 110176505 },
+
+            // --- 퇴직연금(DC) ---
+            { name: "TIGER 미국나스닥100",            code: "133690", amount: 600,        buyPrice: 139163,   price: 201945,   country: "KR", currency: "KRW", account: "퇴직연금DC",  broker: "삼성" },
+            { name: "TIGER 미국S&P500",              code: "360750", amount: 5540,       buyPrice: 21624,    price: 28300,    country: "KR", currency: "KRW", account: "퇴직연금DC",  broker: "삼성" },
+            { name: "KODEX CD금리액티브",             code: "459580", amount: 75,         buyPrice: 1072486,  price: 1073565,  country: "KR", currency: "KRW", account: "퇴직연금DC",  broker: "삼성" },
+            { name: "삼성MMF법인(퇴직연금)",           code: "MMF_DC", amount: 78495703,   buyPrice: 0.9809,   price: 1012,     country: "KR", currency: "KRW", account: "퇴직연금DC",  broker: "삼성", isFund: true, fixedValue: 79418811 },
+            { name: "현금성자산(DC)",                  code: "CASH_DC",amount: 1,          buyPrice: 9474050,  price: 9474050,  country: "KR", currency: "KRW", account: "퇴직연금DC",  broker: "삼성", isFund: true, fixedValue: 9474050 },
+
+            // --- 종합(주식보상S) ---
+            { name: "삼성전자 (주식보상A)",             code: "005930", amount: 90,         buyPrice: 160500,   price: 318500,   country: "KR", currency: "KRW", account: "종합",       broker: "삼성" },
+            { name: "삼성전자 (주식보상B)",             code: "005930", amount: 174,        buyPrice: 197737,   price: 318500,   country: "KR", currency: "KRW", account: "종합",       broker: "삼성" },
+            { name: "TIGER 미국S&P500",              code: "360750", amount: 100,        buyPrice: 23535,    price: 28300,    country: "KR", currency: "KRW", account: "종합",       broker: "삼성" },
+
+            // --- 퇴직연금(IRP) ---
+            { name: "TIGER 미국나스닥100",            code: "133690", amount: 70,         buyPrice: 163200,   price: 201945,   country: "KR", currency: "KRW", account: "IRP",       broker: "삼성" },
+            { name: "KODEX CD금리액티브",             code: "459580", amount: 11,         buyPrice: 1075849,  price: 1073565,  country: "KR", currency: "KRW", account: "IRP",       broker: "삼성" },
+            { name: "현금성자산(IRP)",                 code: "CASH_IRP",amount: 1,         buyPrice: 4068836,  price: 4068836,  country: "KR", currency: "KRW", account: "IRP",       broker: "삼성", isFund: true, fixedValue: 4068836 },
         ];
 
         // ===================== COMPUTED =====================
@@ -389,16 +410,21 @@
 
         function getProcessedHoldings() {
             return rawHoldings.map(h => {
-                if (h.noData || !h.price || !h.buyPrice) {
+                // 펀드/현금 항목 - fixedValue 사용
+                if (h.isFund) {
                     return {
                         ...h,
-                        value: 0,
-                        valueKrw: 0,
-                        profit: 0,
-                        profitKrw: 0,
-                        profitRate: 0,
-                        change: "N/A"
+                        value: h.fixedValue,
+                        valueKrw: h.fixedValue,
+                        profit: h.fixedValue - h.buyPrice * (h.amount > 1 ? 1 : h.amount),
+                        profitKrw: h.fixedValue - (h.buyPrice || h.fixedValue),
+                        profitRate: h.buyPrice ? ((h.fixedValue - h.buyPrice) / h.buyPrice * 100) : 0,
+                        change: h.buyPrice ? ((h.fixedValue - h.buyPrice) / h.buyPrice * 100).toFixed(2) + '%' : '0%',
+                        dayChange: 0, dayChangePercent: 0
                     };
+                }
+                if (h.noData || !h.price || !h.buyPrice) {
+                    return { ...h, value: 0, valueKrw: 0, profit: 0, profitKrw: 0, profitRate: 0, change: "N/A", dayChange: 0, dayChangePercent: 0 };
                 }
                 const value = h.amount * h.price;
                 const cost = h.amount * h.buyPrice;
@@ -451,9 +477,12 @@
             document.getElementById('total-profit-display').className =
                 `text-sm font-bold mb-5 ${totalProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
 
-            document.getElementById('kr-total').innerText = '₩' + formatKrw(krTotal);
-            document.getElementById('us-total').innerText = '₩' + formatKrw(usTotal);
-            document.getElementById('total-count').innerText = rawHoldings.length + '개';
+            const kiwoomTotal = processed.filter(h => h.broker === '키움').reduce((s, h) => s + h.valueKrw, 0);
+            const samsungTotal = processed.filter(h => h.broker === '삼성').reduce((s, h) => s + h.valueKrw, 0);
+
+            document.getElementById('kiwoom-total').innerText = '₩' + formatKrw(kiwoomTotal);
+            document.getElementById('samsung-total').innerText = '₩' + formatKrw(samsungTotal);
+            document.getElementById('total-count').innerText = rawHoldings.filter(h => !h.isFund).length + '개';
 
             document.getElementById('profit-count').innerText = profitHoldings.length + '개';
             document.getElementById('loss-count').innerText = lossHoldings.length + '개';
@@ -629,6 +658,71 @@
         }
 
         // ===================== MODAL =====================
+        function openBrokerModal(broker) {
+            const processed = getProcessedHoldings();
+            const items = processed.filter(h => h.broker === broker);
+            const total = items.reduce((s, h) => s + h.valueKrw, 0);
+            const totalCost = items.filter(h => !h.noData && h.buyPrice && !h.isFund)
+                .reduce((s, h) => {
+                    const c = h.amount * h.buyPrice;
+                    return s + (h.currency === 'USD' ? c * liveExchangeRate : c);
+                }, 0);
+            const profit = items.reduce((s, h) => s + h.profitKrw, 0);
+            const profitRate = totalCost > 0 ? (profit / totalCost * 100) : 0;
+            const profitSign = profit >= 0 ? '+' : '';
+            const profitColor = profit >= 0 ? 'text-emerald-600' : 'text-rose-500';
+
+            document.getElementById('modal-title').innerText = `${broker}증권 상세`;
+            document.getElementById('modal-subtitle').innerText = `총 ${items.length}개 종목 · ₩${formatKrw(total)}`;
+
+            // 계좌별 그룹핑
+            const accounts = [...new Set(items.map(h => h.account).filter(Boolean))];
+
+            const content = `
+                <div class="bg-slate-50 rounded-xl p-4 mb-3">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs font-bold text-slate-600">총 평가금액</span>
+                        <span class="text-sm font-extrabold text-slate-900">₩${formatKrw(total)}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold text-slate-600">총 손익</span>
+                        <span class="text-sm font-extrabold ${profitColor}">${profitSign}₩${formatKrw(profit)} (${profitSign}${profitRate.toFixed(2)}%)</span>
+                    </div>
+                </div>
+                ${accounts.map(account => {
+                    const acItems = items.filter(h => h.account === account);
+                    const acTotal = acItems.reduce((s, h) => s + h.valueKrw, 0);
+                    return `
+                        <div class="mb-3">
+                            <div class="flex justify-between items-center mb-2 px-1">
+                                <span class="text-[10px] font-extrabold text-indigo-600 uppercase">${account}</span>
+                                <span class="text-[10px] font-bold text-slate-400">₩${formatKrw(acTotal)}</span>
+                            </div>
+                            <div class="space-y-1.5">
+                                ${acItems.map(item => {
+                                    const isPos = item.profitRate >= 0;
+                                    const color = isPos ? 'text-emerald-500' : 'text-rose-500';
+                                    return `
+                                    <div onclick="closeModal(); setTimeout(()=>openHoldingModal(${JSON.stringify(item).replace(/"/g,'&quot;')}), 200)"
+                                         class="flex items-center justify-between bg-white rounded-xl px-3 py-2.5 border border-slate-100 cursor-pointer card-tap">
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-xs font-bold text-slate-900 truncate">${item.name}</p>
+                                            <p class="text-[9px] text-slate-400">${item.isFund ? '펀드/현금' : item.amount.toLocaleString() + '주'}</p>
+                                        </div>
+                                        <div class="text-right ml-2">
+                                            <p class="text-xs font-extrabold ${color}">${item.isFund ? '' : item.change}</p>
+                                            <p class="text-[9px] text-slate-400">₩${formatKrw(item.valueKrw)}</p>
+                                        </div>
+                                    </div>`;
+                                }).join('')}
+                            </div>
+                        </div>`;
+                }).join('')}
+            `;
+
+            document.getElementById('modal-content').innerHTML = content;
+            document.getElementById('modal').classList.remove('hidden');
+        }
         function openStockListModal(type) {
             const processed = getProcessedHoldings();
             const isProfit = type === 'profit';
@@ -947,12 +1041,107 @@
             `;
         }
 
+        // ===================== 차트 =====================
+        async function loadIndexChart() {
+            try {
+                const res = await fetch('/api/chart');
+                const data = await res.json();
+
+                const ndx = data['^NDX'];
+                const spx = data['^GSPC'];
+
+                if (!ndx && !spx) throw new Error('데이터 없음');
+
+                // 현재가 요약 표시
+                if (ndx) {
+                    const chg = ndx.current - ndx.prev;
+                    const chgPct = (chg / ndx.prev * 100).toFixed(2);
+                    const color = chg >= 0 ? 'text-emerald-500' : 'text-rose-500';
+                    const sign = chg >= 0 ? '+' : '';
+                    document.getElementById('ndx-price').textContent = ndx.current?.toLocaleString();
+                    document.getElementById('ndx-change').innerHTML = `<span class="${color}">${sign}${chgPct}%</span>`;
+                }
+                if (spx) {
+                    const chg = spx.current - spx.prev;
+                    const chgPct = (chg / spx.prev * 100).toFixed(2);
+                    const color = chg >= 0 ? 'text-emerald-500' : 'text-rose-500';
+                    const sign = chg >= 0 ? '+' : '';
+                    document.getElementById('spx-price').textContent = spx.current?.toLocaleString();
+                    document.getElementById('spx-change').innerHTML = `<span class="${color}">${sign}${chgPct}%</span>`;
+                }
+
+                // 차트 그리기
+                const labels = (ndx || spx).labels;
+                const canvas = document.getElementById('index-chart');
+                document.getElementById('chart-loading').style.display = 'none';
+                canvas.style.display = 'block';
+
+                new Chart(canvas, {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [
+                            ndx ? {
+                                label: '나스닥 100',
+                                data: ndx.data,
+                                borderColor: '#6366f1',
+                                backgroundColor: 'rgba(99,102,241,0.08)',
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                tension: 0.4,
+                                fill: true,
+                            } : null,
+                            spx ? {
+                                label: 'S&P 500',
+                                data: spx.data,
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16,185,129,0.08)',
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                tension: 0.4,
+                                fill: true,
+                            } : null,
+                        ].filter(Boolean),
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: { font: { size: 10 }, boxWidth: 12, padding: 8 }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y?.toLocaleString()}`
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: { font: { size: 9 }, maxTicksLimit: 8 },
+                                grid: { display: false }
+                            },
+                            y: {
+                                ticks: {
+                                    font: { size: 9 },
+                                    callback: v => v >= 1000 ? (v/1000).toFixed(1)+'K' : v
+                                },
+                                grid: { color: 'rgba(0,0,0,0.05)' }
+                            }
+                        }
+                    }
+                });
+            } catch(e) {
+                document.getElementById('chart-loading').innerHTML =
+                    `<span class="text-xs text-slate-400">차트를 불러오지 못했습니다.</span>`;
+            }
+        }
+
         async function loadAllHomeContent() {
-            loadAITip(); // 동기 함수 - 즉시 렌더링
-            await Promise.allSettled([
-                loadAIAppNews(),
-                loadAIStockNews()
-            ]);
+            loadIndexChart();
+            await loadAIStockNews();
         }
 
         async function syncPortfolioWithAI() {
@@ -963,9 +1152,9 @@
             await fetchLivePrices();
 
             // 로딩 상태 초기화
-            document.getElementById('ai-news-section').innerHTML = `<div class="bg-white rounded-2xl p-4 border border-slate-100"><div class="flex items-center gap-2 text-slate-300"><i class="fa-solid fa-circle-notch fa-spin text-xs"></i><span class="text-xs">AI 앱 소식 불러오는 중...</span></div></div>`;
-            document.getElementById('ai-stock-news-section').innerHTML = `<div class="bg-white rounded-2xl p-4 border border-slate-100"><div class="flex items-center gap-2 text-slate-300"><i class="fa-solid fa-circle-notch fa-spin text-xs"></i><span class="text-xs">전문가 의견 불러오는 중...</span></div></div>`;
-            document.getElementById('ai-tip-section').innerHTML = `<div class="bg-white rounded-2xl p-4 border border-slate-100"><div class="flex items-center gap-2 text-slate-300"><i class="fa-solid fa-circle-notch fa-spin text-xs"></i><span class="text-xs">AI 팁 생성 중...</span></div></div>`;
+            document.getElementById('ai-stock-news-section').innerHTML = `<div class="bg-white rounded-2xl p-4 border border-slate-100"><div class="flex items-center gap-2 text-slate-300"><i class="fa-solid fa-circle-notch fa-spin text-xs"></i><span class="text-xs">뉴스 불러오는 중...</span></div></div>`;
+            document.getElementById('chart-loading').style.display = 'flex';
+            document.getElementById('index-chart').style.display = 'none';
 
             renderHome();
             if (currentTab === 'portfolio') renderPortfolio(currentFilter);
