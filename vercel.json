@@ -1,14 +1,15 @@
 {
   "version": 2,
   "builds": [
+    { "src": "api/*.js", "use": "@vercel/node" },
     { "src": "index.html", "use": "@vercel/static" },
-    { "src": "api/*.js", "use": "@vercel/node" }
+    { "src": "icon.png", "use": "@vercel/static" }
   ],
   "routes": [
     { "src": "/api/prices", "dest": "/api/prices.js" },
     { "src": "/api/rss", "dest": "/api/rss.js" },
-    { "src": "/.netlify/functions/rss", "dest": "/api/rss.js" },
-    { "src": "/(.*)", "dest": "/index.html",
+    { "src": "/icon.png", "dest": "/icon.png" },
+    { "src": "/(.*)", "dest": "/api/index.js",
       "headers": {
         "Cache-Control": "no-cache, no-store, must-revalidate",
         "Pragma": "no-cache",
